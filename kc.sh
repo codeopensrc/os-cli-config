@@ -73,12 +73,13 @@ fi
 ############# GIT STUFF ##########
 ############# GIT STUFF ##########
 if [ "$1" = "clone" ]; then
-    if [ ! "$2" = "nh" ] && [ ! "$2" = "main" ]  && [ ! "$2" = "bit" ]; then
-        echo "Please specify 'nh', 'main', 'bit' as 2nd arg"; exit;
+    if [ ! "$2" = "nh" ] && [ ! "$2" = "main" ]  && [ ! "$2" = "bit" ]; && [ ! "$2" = "server" ];then
+        echo "Please specify 'nh', 'main', 'bit', or 'server' as 2nd arg"; exit;
     fi
     if [ "$2" = "nh" ] ; then URL=$NH:/opt/git/$3.git ; fi
     if [ "$2" = "main" ] ; then URL=$GITMAIN:$3.git ; fi
     if [ "$2" = "bit" ] ; then URL=$BIT:JestrJ/$3.git ; fi
+    if [ "$2" = "server" ] ; then URL=$BITSERVER/JestrJ/$REPONAME.git ; fi
 
     FOLDER=$4
     if [ -z "$FOLDER" ] ; then FOLDER=$3 ; fi
