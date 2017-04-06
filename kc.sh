@@ -282,7 +282,7 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
                 RUN_CMD="pg_dump -h $HOST -d $DB_NAME -U postgres | gzip > /home/app/dumps/$DB_NAME.gz"
             fi
             if [[ $CMD = "import" ]]; then
-                RUN_CMD="gunzip -c /home/app/dumps/$DUMP_FILE | psql -h $HOST -d $DB_NAME -U postgres"
+                RUN_CMD="gunzip -c /home/app/dumps/$FILENAME | psql -h $HOST -d $DB_NAME -U postgres"
             fi
         fi
 
