@@ -73,7 +73,7 @@ fi
 ############# GIT STUFF ##########
 ############# GIT STUFF ##########
 if [ "$1" = "clone" ]; then
-    if [ ! "$2" = "nh" ] && [ ! "$2" = "main" ]  && [ ! "$2" = "bit" ]; && [ ! "$2" = "server" ];then
+    if [ ! "$2" = "nh" ] && [ ! "$2" = "main" ]  && [ ! "$2" = "bit" ] && [ ! "$2" = "server" ]; then
         echo "Please specify 'nh', 'main', 'bit', or 'server' as 2nd arg"; exit;
     fi
     if [ "$2" = "nh" ] ; then URL=$NH:/opt/git/$3.git ; fi
@@ -221,6 +221,48 @@ if [[ $1 = "stack" ]]; then
     docker stack deploy --compose-file docker-compose.yml $STACKNAME --with-registry-auth
     exit;
 fi
+
+if [[ $1 = "dmachine" ]]; then
+    if [[ -z $2 ]]; then echo "Please enter machine name"; exit; fi
+    # DO_DOCKER_MACHINE_TOKEN
+    docker-machine create --driver digitalocean \
+    --digitalocean-access-token=$DO_DOCKER_MACHINE_TOKEN \
+    $2;
+    exit;
+    # --azure-ssh-user ops \
+    # --azure-subscription-id $AZURE_SUB_ID \
+    # --azure-open-port 80 \
+fi
+
+if [[ $1 = "swarm" ]]; then
+
+    if [[ $2 = "init" ]]; then
+
+        shift; shift;
+        while getopts "f:i:l:" flag; do
+            # These become set during 'getopts'  --- $OPTIND $OPTARG
+            case "$flag" in
+                f) FOLLOWERS=$OPTARG;;
+                i) ADVT_IP=$OPTARG;;
+                l) LEADER=$OPTARG;;
+            esac
+        done
+
+        if [[ -z $FOLLOWERS ]] || [[ -z $ADVT_IP ]] || [[ -z $LEADER ]]; then exit; fi
+
+        ADVT_IP=$ADVT_IP":2377"
+        IFS=","; read -ra FOLLOWERS <<< "$FOLLOWERS"
+        TOKEN=$(docker-machine ssh $LEADER "docker swarm init --advertise-addr $ADVT_IP | grep -- --token;")
+
+        for follower in "${FOLLOWERS[@]}" ; do
+            docker-machine ssh $follower "set -e; docker swarm join \\
+                $TOKEN
+                $ADVT_IP";
+        done
+        exit
+    fi
+    exit;
+fi
 ############# END DOCKER STUFF ##########
 ############# END DOCKER STUFF ##########
 
@@ -249,18 +291,26 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
         if [[ $DB_TYPE = "pg" ]]; then DB="pg"; IMAGE="postgres:9.4"; fi
 
         shift; shift;
-        while getopts "d:h:f:" flag; do
+        while getopts "d:h:f:t:" flag; do
             # These become set during 'getopts'  --- $OPTIND $OPTARG
             case "$flag" in
                 d) DB_NAME=$OPTARG;;
                 f) DUMP_FILE=$OPTARG;;
                 h) HOST=$OPTARG;;
+                t) TABLES=$OPTARG;;
             esac
         done
 
         if [[ -z $HOST ]] || [[ -z $DB_NAME ]]; then echo "Please specify a host and database"; exit; fi
-        if [[ $CMD = "import" ]] && [[ -z $DUMP_FILE ]]; then echo "Please specify a dump file"; exit; fi
 
+        if [[ ! -z $TABLES ]]; then
+            IFS=","; read -ra TABLEARR <<< "$TABLES";
+            for table in "${TABLEARR[@]}" ; do
+                TABLESTR="$TABLESTR -t $table"
+            done
+        fi
+
+        if [[ $CMD = "import" ]] && [[ -z $DUMP_FILE ]]; then echo "Please specify a dump file"; exit; fi
         if [[ $CMD = "import" ]]; then FILENAME=$(basename $DUMP_FILE); fi
         if [[ $CMD = "dump" ]]; then mkdir tempdbdump; fi
 
@@ -279,7 +329,7 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
 
         if [[ $DB_TYPE = "pg" ]]; then
             if [[ $CMD = "dump" ]]; then
-                RUN_CMD="pg_dump -h $HOST -d $DB_NAME -U postgres | gzip > /home/app/dumps/$DB_NAME.gz"
+                RUN_CMD="pg_dump -h $HOST -d $DB_NAME -U postgres $TABLESTR | gzip > /home/app/dumps/$DB_NAME.gz"
             fi
             if [[ $CMD = "import" ]]; then
                 RUN_CMD="gunzip -c /home/app/dumps/$FILENAME | psql -h $HOST -d $DB_NAME -U postgres"
