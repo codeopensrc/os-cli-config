@@ -1,5 +1,7 @@
 #!/bin/bash
 
+INITIALIFS=$IFS;
+
 source $HOME/code/secrets/variables.sh
 
 if [ "$1" = "load" ]; then
@@ -251,7 +253,7 @@ if [[ $1 = "swarm" ]]; then
         if [[ -z $FOLLOWERS ]] || [[ -z $ADVT_IP ]] || [[ -z $LEADER ]]; then exit; fi
 
         ADVT_IP=$ADVT_IP":2377"
-        IFS=","; read -ra FOLLOWERS <<< "$FOLLOWERS"
+        IFS=","; read -ra FOLLOWERS <<< "$FOLLOWERS"; IFS=$INITIALIFS;
         TOKEN=$(docker-machine ssh $LEADER "docker swarm init --advertise-addr $ADVT_IP | grep -- --token;")
 
         for follower in "${FOLLOWERS[@]}" ; do
@@ -304,7 +306,7 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
         if [[ -z $HOST ]] || [[ -z $DB_NAME ]]; then echo "Please specify a host and database"; exit; fi
 
         if [[ ! -z $TABLES ]]; then
-            IFS=","; read -ra TABLEARR <<< "$TABLES";
+            IFS=","; read -ra TABLEARR <<< "$TABLES"; IFS=$INITIALIFS;
             for table in "${TABLEARR[@]}" ; do
                 TABLESTR="$TABLESTR -t $table"
             done
