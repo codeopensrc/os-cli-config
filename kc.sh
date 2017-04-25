@@ -354,12 +354,12 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
         fi
 
         if [[ $DB_TYPE = "pg" ]]; then
-            docker run -v temp_"$DB_TYPE":/var/lib/postgresql/data --network pg0 -d -p 5432:5432 \
+            docker run -v temp_"$DB_TYPE":/var/lib/postgresql/data --network pg0 -d -p 172.17.0.1:5432:5432 \
              --name "$DB_TYPE"_server postgres:9.4
         fi
 
         if [[ $DB_TYPE = "mongo" ]]; then
-            docker run -v temp_"$DB_TYPE":/data/db --network mongo0 -d -p 27017:27017 \
+            docker run -v temp_"$DB_TYPE":/data/db --network mongo0 -d -p 172.17.0.1:27017:27017 \
             --name "$DB_TYPE"_server mongo
         fi
         exit;
