@@ -81,7 +81,7 @@ if [ "$1" = "clone" ]; then
     if [ "$2" = "nh" ] ; then URL=$NH:/opt/git/$3.git ; fi
     if [ "$2" = "main" ] ; then URL=$GITMAIN:$3.git ; fi
     if [ "$2" = "bit" ] ; then URL=$BIT:JestrJ/$3.git ; fi
-    if [ "$2" = "server" ] ; then URL=$BITSERVER/JestrJ/$REPONAME.git ; fi
+    if [ "$2" = "server" ] ; then URL=$BITSERVER/JestrJ/$3.git ; fi
 
     FOLDER=$4
     if [ -z "$FOLDER" ] ; then FOLDER=$3 ; fi
@@ -226,10 +226,13 @@ fi
 
 if [[ $1 = "dmachine" ]]; then
     if [[ -z $2 ]]; then echo "Please enter machine name"; exit; fi
-    # DO_DOCKER_MACHINE_TOKEN
     docker-machine create --driver digitalocean \
     --digitalocean-access-token=$DO_DOCKER_MACHINE_TOKEN \
+    --digitalocean-ssh-key-fingerprint=$DO_FINGERPRINT \
     $2;
+    IP=$(docker-machine ip $2)
+    COMMAND="echo \"$IP $IP $2\" >> /etc/hosts; sed -i 's/$2.localdomain/$IP/' /etc/hosts; sudo reboot now;"
+    echo $COMMAND | docker-machine ssh $2
     exit;
     # --azure-ssh-user ops \
     # --azure-subscription-id $AZURE_SUB_ID \
@@ -267,6 +270,66 @@ if [[ $1 = "swarm" ]]; then
 fi
 ############# END DOCKER STUFF ##########
 ############# END DOCKER STUFF ##########
+
+############# CHEF STUFF ##########
+############# CHEF STUFF ##########
+
+if [[ $1 = "chef" ]]; then
+
+    if [[ $2 = "server" ]]; then
+        wget "https://packages.chef.io/files/stable/chef-server/12.15.0/ubuntu/14.04/chef-server-core_12.15.0-1_amd64.deb"
+        exit;
+    fi
+
+    if [[ $2 = "bootstrap" ]]; then
+        if [[ $6 =  "azure" ]]; then
+            knife bootstrap $3 --ssh-user $AZURE_SSH_USER --sudo --identity-file ~/.ssh/id_rsa --node-name $4 --run-list $5 \
+                --json-attributes '{"cloud": {"public_ip": "$3"}}'
+        else
+            knife bootstrap $3 --sudo --identity-file ~/.ssh/id_rsa --node-name $4 --run-list $5
+        fi
+        exit;
+    fi
+
+    if [[ $2 = "ssh" ]]; then
+        if [[ $4 =  "azure" ]]; then
+            knife ssh $3 'sudo chef-client' --ssh-user $AZURE_SSH_USER --identity-file ~/.ssh/id_rsa \
+            --attribute cloud.public_ip
+        else
+            knife ssh $3 'sudo chef-client' --identity-file ~/.ssh/id_rsa -x root -a ipaddress
+        fi
+
+        exit
+    fi
+
+    if [[ $2 = "del" ]]; then
+        if [[ -z $3 ]]; then echo "Please specify a chef node"; exit; fi
+        knife node delete $3 -y
+        knife client delete $3 -y
+        docker-machine ssh $3 'sudo rm /etc/chef/client.pem'
+        exit;
+    fi
+
+    # .docker\machine\machines\MACHINE_NAME\id_rsa
+    # https://docs.chef.io/attributes.html
+    # node['hostname']
+    # node['ipaddress']
+    # node['domain']
+
+    exit;
+fi
+
+############# END CHEF STUFF ##########
+############# END CHEF STUFF ##########
+
+############# CONSUL STUFF ##########
+############# CONSUL STUFF ##########
+
+if [[ $2 = "consul" ]]; then
+    wget https://releases.hashicorp.com/consul/0.8.1/consul_0.8.1_linux_amd64.zip
+fi
+############# END CONSUL STUFF ##########
+############# END CONSUL STUFF ##########
 
 if [[ $1 = "deploy" ]]; then
     if [[ -z $2 ]]; then echo "Please specify project folder name."; exit ; fi

@@ -3,3 +3,4 @@ source $HOME/code/secrets/tokens.sh
 source $HOME/code/secrets/lin-tokens.sh
 source $HOME/code/secrets/env.sh
 source $HOME/.bash_aliases
+export PATH="/opt/chefdk/embedded/bin:$PATH"
