@@ -6,6 +6,7 @@ source $HOME/code/secrets/variables.sh
 
 if [ "$1" = "load" ]; then
     sudo cp $HOME/code/configs/kc.sh /usr/local/bin/kc && sudo chmod +x /usr/local/bin/kc
+    echo "Loaded"
     exit;
 fi
 
@@ -24,7 +25,8 @@ if [ "$1" = "rmlinks" ]; then
 fi
 
 if [ "$1" = "config" ]; then
-    vim $HOME/code/configs/kc.sh
+    if [[ $2 = "atom" ]]; then atom $HOME/code/configs/kc.sh ;
+    else vim $HOME/code/configs/kc.sh ; fi
     exit;
 fi
 
@@ -69,6 +71,21 @@ if [[ $1 = "copykey" ]]; then
     cat $HOME/.ssh/id_rsa.pub | $REMOTE "cat >> ~/.ssh/authorized_keys"
     exit;
 fi
+
+if [[ $1 = "tunnel" ]]; then
+
+    if [[ $2 = "from" ]]; then
+        # kc tunnel from kc@111.111.111.111 into localhost:22 from port 33
+        ssh -R $8:$5 $3 -N
+        exit
+    fi
+
+    if [[ $2 = "to" ]]; then
+        # kc tunnel to 222.222.222.222 using port 8500 user kc
+        ssh -L 3333:172.17.0.1:$6 $8@$3 -N
+        exit
+    fi
+fi
 ############# END SSH STUFF ##########
 ############# END SSH STUFF ##########
 
@@ -93,7 +110,7 @@ if [ "$1" = "initrepo" ]; then
     if [ ! "$2" = "nh" ] && [ ! "$2" = "main" ] ; then echo "Please specify 'nh' or 'main' as 2nd arg" ; exit; fi
     git init
     git add -A && git commit -m "Init"
-    kc pushrepo $2 $3
+    $0 pushrepo $2 $3
     exit;
 fi
 
@@ -106,9 +123,9 @@ if [ "$1" = "pushrepo" ]; then
     if [ "$2" = "nh" ] ; then URL=$NH:/opt/git/ LOC=/opt/git; fi
     if [ "$2" = "main" ] ; then URL=$GITMAIN: LOC=/home/git; fi
 
-    kc $2 "mkdir $LOC/$REPONAME.git && cd $LOC/$REPONAME.git && git --bare init"
+    $0 $2 "mkdir $LOC/$REPONAME.git && cd $LOC/$REPONAME.git && git --bare init"
     git remote add origin $URL$REPONAME.git
-    if [ $? -ne 0 ] ; then kc seturl $2 $REPONAME ; fi
+    if [ $? -ne 0 ] ; then $0 seturl $2 $REPONAME ; fi
     git push origin master
     echo ""
     echo "== New repo available: $REPONAME.git =="
@@ -179,9 +196,9 @@ fi
 
 if [ "$1" = "repos" ]; then
     echo "========= NH Repos ========="
-    kc nh "cd git && ls -l"
+    $0 nh "cd git && ls -l"
     echo "======== Main Repos ========"
-    kc main "cd git && ls -l"
+    $0 main "cd git && ls -l"
     exit;
 fi
 ############# END GIT STUFF ##########
@@ -196,6 +213,18 @@ fi
 
 if [ "$1" = "rmi" ]; then
     docker rmi $(docker images -f 'dangling=true' -q)
+    exit;
+fi
+
+if [[ $1 = "rmm" ]]; then
+    MACHINES=$(docker-machine ls | grep -v 'NAME' | awk '{ print $1 }')
+    docker-machine rm $MACHINES
+    exit;
+fi
+
+if [[ $1 = "destroy" ]]; then
+    $0 rmm;
+    terraform destroy;
     exit;
 fi
 
@@ -244,18 +273,17 @@ if [[ $1 = "swarm" ]]; then
     if [[ $2 = "init" ]]; then
 
         shift; shift;
-        while getopts "f:i:l:" flag; do
+        while getopts "f:l:" flag; do
             # These become set during 'getopts'  --- $OPTIND $OPTARG
             case "$flag" in
                 f) FOLLOWERS=$OPTARG;;
-                i) ADVT_IP=$OPTARG;;
                 l) LEADER=$OPTARG;;
             esac
         done
 
-        if [[ -z $FOLLOWERS ]] || [[ -z $ADVT_IP ]] || [[ -z $LEADER ]]; then exit; fi
+        if [[ -z $FOLLOWERS ]] || [[ -z $LEADER ]]; then exit; fi
 
-        ADVT_IP=$ADVT_IP":2377"
+        ADVT_IP=$(docker-machine ip $LEADER)":2377"
         IFS=","; read -ra FOLLOWERS <<< "$FOLLOWERS"; IFS=$INITIALIFS;
         TOKEN=$(docker-machine ssh $LEADER "docker swarm init --advertise-addr $ADVT_IP | grep -- --token;")
 
@@ -282,21 +310,22 @@ if [[ $1 = "chef" ]]; then
     fi
 
     if [[ $2 = "bootstrap" ]]; then
-        if [[ $6 =  "azure" ]]; then
-            knife bootstrap $3 --ssh-user $AZURE_SSH_USER --sudo --identity-file ~/.ssh/id_rsa --node-name $4 --run-list $5 \
-                --json-attributes '{"cloud": {"public_ip": "$3"}}'
+        IP=$(docker-machine ip $3)
+        if [[ $5 =  "azure" ]]; then
+            knife bootstrap $IP --ssh-user $AZURE_SSH_USER --sudo --identity-file ~/.ssh/id_rsa --node-name $3 --run-list $4 \
+                --json-attributes '{"cloud": {"public_ip": "$IP"}}'
         else
-            knife bootstrap $3 --sudo --identity-file ~/.ssh/id_rsa --node-name $4 --run-list $5
+            knife bootstrap $IP --sudo --identity-file ~/.ssh/id_rsa --node-name $3 --run-list $4
         fi
         exit;
     fi
 
     if [[ $2 = "ssh" ]]; then
         if [[ $4 =  "azure" ]]; then
-            knife ssh $3 'sudo chef-client' --ssh-user $AZURE_SSH_USER --identity-file ~/.ssh/id_rsa \
+            knife ssh $4 $3 --ssh-user $AZURE_SSH_USER --identity-file ~/.ssh/id_rsa \
             --attribute cloud.public_ip
         else
-            knife ssh $3 'sudo chef-client' --identity-file ~/.ssh/id_rsa -x root -a ipaddress
+            knife ssh $4 $3 --identity-file ~/.ssh/id_rsa -x root -a ipaddress
         fi
 
         exit
@@ -307,6 +336,14 @@ if [[ $1 = "chef" ]]; then
         knife node delete $3 -y
         knife client delete $3 -y
         docker-machine ssh $3 'sudo rm /etc/chef/client.pem'
+        exit;
+    fi
+
+    if [[ $2 = "delall" ]]; then
+        MACHINES=($(docker-machine ls | grep -v 'NAME' | awk '{ print $1 }'))
+        for machine in ${MACHINES[@]}; do
+            $0 chef del $machine
+        done
         exit;
     fi
 
