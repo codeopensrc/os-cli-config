@@ -294,6 +294,32 @@ if [[ $1 = "swarm" ]]; then
         done
         exit
     fi
+
+    if [[ $2 = "join" ]]; then
+
+        shift; shift;
+        while getopts "f:l:" flag; do
+            # These become set during 'getopts'  --- $OPTIND $OPTARG
+            case "$flag" in
+                f) FOLLOWERS=$OPTARG;;
+                l) LEADER=$OPTARG;;
+            esac
+        done
+
+        if [[ -z $FOLLOWERS ]] || [[ -z $LEADER ]]; then exit; fi
+
+        ADVT_IP=$(docker-machine ip $LEADER)":2377"
+        IFS=","; read -ra FOLLOWERS <<< "$FOLLOWERS"; IFS=$INITIALIFS;
+        TOKEN=$(docker-machine ssh $LEADER "docker swarm join-token worker | grep -- --token;")
+        # TOKEN=$(docker-machine ssh $LEADER "docker swarm init --advertise-addr $ADVT_IP | grep -- --token;")
+
+        for follower in "${FOLLOWERS[@]}" ; do
+            docker-machine ssh $follower "set -e; docker swarm join \\
+                $TOKEN
+                $ADVT_IP";
+        done
+        exit
+    fi
     exit;
 fi
 ############# END DOCKER STUFF ##########
