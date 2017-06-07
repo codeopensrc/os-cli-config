@@ -2,6 +2,9 @@
 
 INITIALIFS=$IFS;
 
+# Technique for future reference to "expose" a running container to dif port
+# docker exec -it <containterid> ssh -R5432:localhost:5432 <user>@<hostip>
+
 source $HOME/code/secrets/variables.sh
 
 if [ "$1" = "load" ]; then
@@ -25,7 +28,7 @@ if [ "$1" = "rmlinks" ]; then
 fi
 
 if [ "$1" = "config" ]; then
-    if [[ $2 = "atom" ]]; then atom $HOME/code/configs/kc.sh ;
+    if [[ $2 = "atom" ]]; then atom $HOME/code/configs ;
     else vim $HOME/code/configs/kc.sh ; fi
     exit;
 fi
@@ -246,9 +249,27 @@ if [[ $1 = "dpush" ]]; then
     exit;
 fi
 
+if [[ $1 = "dswarm" ]]; then
+    if [[ $2 = "reset" ]]; then
+        echo  export DOCKER_TLS_VERIFY=""
+        echo  export DOCKER_HOST=""
+        echo  export DOCKER_CERT_PATH=""
+        echo  export DOCKER_MACHINE_NAME=""
+    fi
+    exit;
+fi
+
 if [[ $1 = "stack" ]]; then
-    STACKNAME=$2
+    shift;
+    while getopts "m:n:" flag; do
+        # These become set during 'getopts'  --- $OPTIND $OPTARG
+        case "$flag" in
+            m) MACHINE=$OPTARG;;
+            n) STACKNAME=$OPTARG;;
+        esac
+    done
     if [[ -z $STACKNAME ]]; then STACKNAME="default"; fi
+    eval $(docker-machine env $MACHINE)
     docker stack deploy --compose-file docker-compose.yml $STACKNAME --with-registry-auth
     exit;
 fi
@@ -406,6 +427,51 @@ if [[ $1 = "deploy" ]]; then
     curl -X POST --header "Content-Type: application/json" \
         $SLACK_DEPLOY_HOOK \
         -d ''"$MESSAGE"''
+    exit;
+fi
+
+if [[ $1 = "deploysingle" ]]; then
+    shift;
+    while getopts "m:" flag; do
+        # These become set during 'getopts'  --- $OPTIND $OPTARG
+        case "$flag" in
+            m) MACHINE=$OPTARG;;
+        esac
+    done
+
+    if [[ -z $MACHINE ]]; then echo "Please provide a docker machine"; exit ; fi
+    REPO=${PWD##*/}
+    IP=$(docker-machine ip $MACHINE)
+
+    rsync -avuz --exclude=".git" --exclude="node_modules" --exclude="server/output" . root@$IP:~/$REPO
+    exit;
+fi
+
+
+if [[ $1 = "build" ]]; then
+
+    shift;
+    while getopts "m:r:" flag; do
+        # These become set during 'getopts'  --- $OPTIND $OPTARG
+        case "$flag" in
+            r) REGISTRY=$OPTARG;;
+            m) MACHINE=$OPTARG;;
+        esac
+    done
+
+    if [[ -z $MACHINE ]]; then echo "Please provide a docker machine"; exit ; fi
+    if [[ $REGISTRY = 'hub' ]] || [[ -z $REGISTRY ]]; then LOGIN="-u $DOCKER_HUB_USER -p $DOCKER_HUB_PW" ; fi
+    if [[ $REGISTRY = 'ree' ]]; then LOGIN="$REGISTRY_NAME -u $REGISTRY_APP_ID -p $REGISTRY_PW" ; fi
+
+    LOGIN="docker login $LOGIN";
+    REPO=${PWD##*/}
+
+    CMD="cd ~/$REPO; docker-compose build; $LOGIN; docker-compose push;"
+    CMD="$CMD docker rmi \$(docker images -f 'dangling=true' -q);"
+    IP=$(docker-machine ip $MACHINE)
+
+    rsync -avuz --exclude=".git" --exclude="node_modules" --exclude="server/output" . root@$IP:~/$REPO
+    ssh root@$IP $CMD
     exit;
 fi
 
