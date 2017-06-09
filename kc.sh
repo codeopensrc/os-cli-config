@@ -158,7 +158,7 @@ if [ "$1" = "tag" ]; then
     if [ -z "$2" ]; then exit ; fi
     echo -n "Tag as v$MAJOR.$MINOR.$PATCH ? (y/n): "
     read YN
-    if [ "$YN" = y ]; then git tag -a v$MAJOR.$MINOR.$PATCH ; fi
+    if [ "$YN" = y ]; then git tag v$MAJOR.$MINOR.$PATCH ; fi
     exit;
 fi
 
