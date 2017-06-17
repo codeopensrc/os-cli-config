@@ -260,12 +260,13 @@ if [[ $1 = "dswarm" ]]; then
 fi
 
 if [[ $1 = "stack" ]]; then
+    #TODO: Check for docker-compose file if this is ever really "published" formally
+    STACKNAME=$(cat docker-compose.yml | grep "SERVICE_NAME"| cut -d ":" -f 2)
     shift;
-    while getopts "m:n:" flag; do
+    while getopts "m:" flag; do
         # These become set during 'getopts'  --- $OPTIND $OPTARG
         case "$flag" in
             m) MACHINE=$OPTARG;;
-            n) STACKNAME=$OPTARG;;
         esac
     done
     if [[ -z $STACKNAME ]]; then STACKNAME="default"; fi
