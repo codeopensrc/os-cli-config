@@ -486,6 +486,7 @@ if [[ $1 = "build" ]]; then
     if [[ -z $MACHINE ]]; then echo "Please provide a docker machine"; exit ; fi
     if [[ $REGISTRY = 'hub' ]] || [[ -z $REGISTRY ]]; then LOGIN="-u $DOCKER_HUB_USER -p $DOCKER_HUB_PW" ; fi
     if [[ $REGISTRY = 'ree' ]]; then LOGIN="$REGISTRY_NAME -u $REGISTRY_APP_ID -p $REGISTRY_PW" ; fi
+    if [[ $REGISTRY = 'ms' ]]; then LOGIN="-u $MS_DOCKERHUB_USER -p $MS_DOCKERHUB_TOKEN" ; fi
 
     LOGIN="docker login $LOGIN";
     REPO=${PWD##*/}
