@@ -174,9 +174,11 @@ if [ "$1" = "seturl" ]; then
     REPONAME=$3
     if [[ -z $REPONAME ]] ; then REPONAME=${PWD##*/} ; fi
     if [ "$2" = "nh" ] ; then git remote set-url origin $NH:/opt/git/$REPONAME.git ; fi
-    if [ "$2" = "main" ] || [ "$2" = "git" ] ; then git remote set-url origin $GITMAIN:$REPONAME.git ; fi
-    if [ "$2" = "bit" ] ; then git remote set-url origin $BIT:JestrJ/$REPONAME.git ; fi
-    if [ "$2" = "server" ] ; then git remote set-url origin $BITSERVER/JestrJ/$REPONAME.git ; fi
+    if [ "$2" = "main" ] ; then git remote set-url origin $GITMAIN:$REPONAME.git ; fi
+    if [ "$2" = "bit" ] ; then git remote set-url origin $BIT/$REPONAME.git ; fi
+    if [ "$2" = "server" ] ; then git remote set-url origin $BITSERVER/$REPONAME.git ; fi
+    if [ "$2" = "ms" ] ; then git remote set-url origin $BITMS/$REPONAME.git ; fi
+    if [ "$2" = "git" ] ; then git remote set-url origin $GITKC/$REPONAME.git ; fi
     exit;
 fi
 
@@ -290,6 +292,25 @@ if [[ $1 = "dmachine" ]]; then
     # --azure-open-port 80 \
 fi
 
+if [[ $1 = "attach" ]]; then
+    shift;
+    while getopts "i:m:" flag; do
+        # These become set during 'getopts'  --- $OPTIND $OPTARG
+        case "$flag" in
+            i) IP=$OPTARG;;
+            m) MACHINE=$OPTARG;;
+        esac
+    done
+
+    if [[ -z $IP ]]; then echo "Please enter machine IP"; exit; fi
+    if [[ -z $MACHINE ]]; then echo "Please provide name of machine node"; exit; fi
+
+    docker-machine rm $MACHINE
+
+    docker-machine create --driver generic --generic-ip-address=$IP \
+    --generic-ssh-key ~/.ssh/id_rsa $MACHINE
+fi
+
 if [[ $1 = "swarm" ]]; then
 
     if [[ $2 = "init" ]]; then
@@ -369,9 +390,11 @@ if [[ $1 = "chef" ]]; then
     fi
 
     if [[ $2 = "ssh" ]]; then
-        if [[ $4 =  "azure" ]]; then
-            knife ssh $4 $3 --ssh-user $AZURE_SSH_USER --identity-file ~/.ssh/id_rsa \
+        if [[ $3 = "azure" ]]; then
+            knife ssh $5 $4 --identity-file ~/.ssh/id_rsa -x $AZURE_SSH_USER \
             --attribute cloud.public_ip
+        elif [[ $3 = "aws" ]]; then
+            knife ssh $5 $4 --identity-file ~/.ssh/id_rsa -x root --attribute cloud.public_ipv4
         else
             knife ssh $4 $3 --identity-file ~/.ssh/id_rsa -x root -a ipaddress
         fi
