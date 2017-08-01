@@ -175,10 +175,10 @@ if [ "$1" = "seturl" ]; then
     if [[ -z $REPONAME ]] ; then REPONAME=${PWD##*/} ; fi
     if [ "$2" = "nh" ] ; then git remote set-url origin $NH:/opt/git/$REPONAME.git ; fi
     if [ "$2" = "main" ] ; then git remote set-url origin $GITMAIN:$REPONAME.git ; fi
-    if [ "$2" = "bit" ] ; then git remote set-url origin $BIT/$REPONAME.git ; fi
-    if [ "$2" = "server" ] ; then git remote set-url origin $BITSERVER/$REPONAME.git ; fi
-    if [ "$2" = "ms" ] ; then git remote set-url origin $BITMS/$REPONAME.git ; fi
+    if [ "$2" = "ms" ] ; then git remote set-url origin $GITMS/$REPONAME.git ; fi
     if [ "$2" = "git" ] ; then git remote set-url origin $GITKC/$REPONAME.git ; fi
+    if [ "$2" = "bit" ] ; then git remote set-url origin $BIT/$REPONAME.git ; fi
+    # if [ "$2" = "server" ] ; then git remote set-url origin $BITSERVER/$REPONAME.git ; fi
     exit;
 fi
 
@@ -503,11 +503,13 @@ fi
 
 if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
     DB_TYPE=$1
+    MONGO_IMAGE="mongo"
+    PG_IMAGE="postgres:9.5"
 
     if [[ $2 = "dump" ]] || [[ $2 = "import" ]]; then
         CMD=$2
-        if [[ $DB_TYPE = "mongo" ]]; then DB="mongo"; IMAGE="mongo"; fi
-        if [[ $DB_TYPE = "pg" ]]; then DB="pg"; IMAGE="postgres:9.4"; fi
+        if [[ $DB_TYPE = "mongo" ]]; then DB="mongo"; IMAGE=$MONGO_IMAGE; fi
+        if [[ $DB_TYPE = "pg" ]]; then DB="pg"; IMAGE=$PG_IMAGE; fi
 
         shift; shift;
         while getopts "d:h:f:t:" flag; do
@@ -572,12 +574,12 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
 
         if [[ $DB_TYPE = "pg" ]]; then
             docker run -v temp_"$DB_TYPE":/var/lib/postgresql/data --network pg0 -d -p 172.17.0.1:5432:5432 \
-             --name "$DB_TYPE"_server postgres:9.4
+             --name "$DB_TYPE"_server $PG_IMAGE
         fi
 
         if [[ $DB_TYPE = "mongo" ]]; then
             docker run -v temp_"$DB_TYPE":/data/db --network mongo0 -d -p 172.17.0.1:27017:27017 \
-            --name "$DB_TYPE"_server mongo
+            --name "$DB_TYPE"_server $MONGO_IMAGE
         fi
         exit;
     fi
