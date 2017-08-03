@@ -491,11 +491,11 @@ if [[ $1 = "build" ]]; then
     LOGIN="docker login $LOGIN";
     REPO=${PWD##*/}
 
-    CMD="cd ~/$REPO; docker-compose build; $LOGIN; docker-compose push;"
+    CMD="cd ~/builds/$REPO; docker-compose build; $LOGIN; docker-compose push;"
     CMD="$CMD docker rmi \$(docker images -f 'dangling=true' -q);"
     IP=$(docker-machine ip $MACHINE)
 
-    rsync -avuz --exclude=".git" --exclude="node_modules" --exclude="server/output" . root@$IP:~/$REPO
+    rsync -avuz --exclude=".git" --exclude="node_modules" --exclude="server/output" . root@$IP:~/builds/$REPO
     ssh root@$IP $CMD
     exit;
 fi
