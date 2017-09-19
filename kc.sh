@@ -544,7 +544,7 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
                 RUN_CMD="mongodump --host $HOST --db $DB_NAME --out /home/app/dumps/"
             fi
             if [[ $CMD = "import" ]]; then
-                RUN_CMD="mongorestore --host $HOST -d $DB_NAME /home/app/dumps/$FILENAME/"
+                RUN_CMD="mongorestore --host $HOST --db $DB_NAME /home/app/dumps/$FILENAME/"
             fi
         fi
 
