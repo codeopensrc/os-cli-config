@@ -156,9 +156,9 @@ if [ "$1" = "tag" ]; then
     esac
 
     if [ -z "$2" ]; then exit ; fi
-    echo -n "Tag as v$MAJOR.$MINOR.$PATCH ? (y/n): "
+    echo -n "Tag as $MAJOR.$MINOR.$PATCH ? (y/n): "
     read YN
-    if [ "$YN" = y ]; then git tag v$MAJOR.$MINOR.$PATCH ; fi
+    if [ "$YN" = y ]; then git tag $MAJOR.$MINOR.$PATCH ; fi
     exit;
 fi
 
@@ -467,7 +467,7 @@ if [[ $1 = "deploysingle" ]]; then
     REPO=${PWD##*/}
     IP=$(docker-machine ip $MACHINE)
 
-    rsync -avuz --exclude=".git" --exclude="node_modules" --exclude="server/output" . root@$IP:~/$REPO
+    rsync -avuz --exclude=".git" --exclude="node_modules" --exclude="server/output" --exclude="tempdbdump" . root@$IP:~/$REPO
     exit;
 fi
 
@@ -483,19 +483,21 @@ if [[ $1 = "build" ]]; then
         esac
     done
 
-    if [[ -z $MACHINE ]]; then echo "Please provide a docker machine"; exit ; fi
-    if [[ $REGISTRY = 'hub' ]] || [[ -z $REGISTRY ]]; then LOGIN="-u $DOCKER_HUB_USER -p $DOCKER_HUB_PW" ; fi
-    if [[ $REGISTRY = 'ree' ]]; then LOGIN="$REGISTRY_NAME -u $REGISTRY_APP_ID -p $REGISTRY_PW" ; fi
-    if [[ $REGISTRY = 'ms' ]]; then LOGIN="-u $MS_DOCKERHUB_USER -p $MS_DOCKERHUB_TOKEN" ; fi
+    if [[ -z $MACHINE ]]; then echo "Please provide a docker machine using the -m flag"; exit ; fi
+    if [[ $REGISTRY = 'hub' ]] || [[ -z $REGISTRY ]]; then CREDS="-u $DOCKER_HUB_USER -p $DOCKER_HUB_PW" ; fi
+    if [[ $REGISTRY = 'ree' ]]; then CREDS="$REGISTRY_NAME -u $REGISTRY_APP_ID -p $REGISTRY_PW" ; fi
+    if [[ $REGISTRY = 'ms' ]]; then CREDS="-u $MS_DOCKERHUB_USER -p $MS_DOCKERHUB_TOKEN" ; fi
 
-    LOGIN="docker login $LOGIN";
+    LOGIN="docker login $CREDS";
     REPO=${PWD##*/}
-
-    CMD="cd ~/builds/$REPO; docker-compose build; $LOGIN; docker-compose push;"
+    IMAGE=$(docker-compose config | grep image | tail -1 | cut -d ":" -f 2 | awk '{$1=$1};1')
+    VER=$(docker-compose config | grep image | tail -1 | cut -d ":" -f 3 | awk '{$1=$1};1')
+    CMD="cd ~/builds/$REPO; docker-compose build; docker tag $IMAGE:$VER $IMAGE:latest;"
+    CMD="$CMD $LOGIN; docker-compose push; docker push $IMAGE:latest;"
     CMD="$CMD docker rmi \$(docker images -f 'dangling=true' -q);"
     IP=$(docker-machine ip $MACHINE)
 
-    rsync -avuz --exclude=".git" --exclude="node_modules" --exclude="server/output" . root@$IP:~/builds/$REPO
+    rsync -avuz --exclude=".git" --exclude="node_modules" --exclude="server/output" --exclude="tempdbdump" . root@$IP:~/builds/$REPO
     ssh root@$IP $CMD
     exit;
 fi
@@ -522,7 +524,9 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
             esac
         done
 
-        if [[ -z $HOST ]] || [[ -z $DB_NAME ]]; then echo "Please specify a host and database"; exit; fi
+        if [[ -z $HOST ]] || [[ -z $DB_NAME ]]; then
+            echo "Please specify a host and database using -h and -d flags"; exit;
+        fi
 
         if [[ ! -z $TABLES ]]; then
             IFS=","; read -ra TABLEARR <<< "$TABLES"; IFS=$INITIALIFS;
@@ -531,30 +535,39 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
             done
         fi
 
-        if [[ $CMD = "import" ]] && [[ -z $DUMP_FILE ]]; then echo "Please specify a dump file"; exit; fi
+        if [[ $CMD = "import" ]] && [[ -z $DUMP_FILE ]]; then
+            echo "Please specify a dump file using -f flag";
+            echo "Note: File must be inside of a directory 'tempdbdump' inside current directory"
+            exit;
+        fi
         if [[ $CMD = "import" ]]; then FILENAME=$(basename $DUMP_FILE); fi
         if [[ $CMD = "dump" ]]; then mkdir tempdbdump; fi
 
         NETWORK=$DB_TYPE"0"
-        DOCKER="docker run -v $PWD/tempdbdump:/home/app/dumps --name backup_$DB \
-            -u=$(id -u $(whoami)) --network $NETWORK --rm $IMAGE bash -c"
+        if [[ $CMD = "dump" ]]; then
+            DOCKER="docker run -v $PWD/tempdbdump:/home/app/dumps --name backup_$DB \
+                -u=$(id -u $(whoami)) --network $NETWORK --rm $IMAGE bash -c"
 
-        if [[ $DB_TYPE = "mongo" ]]; then
-            if [[ $CMD = "dump" ]]; then
+            if [[ $DB_TYPE = "mongo" ]]; then
                 RUN_CMD="mongodump --host $HOST --db $DB_NAME --out /home/app/dumps/"
             fi
-            if [[ $CMD = "import" ]]; then
-                RUN_CMD="mongorestore --host $HOST --db $DB_NAME /home/app/dumps/$FILENAME/"
+
+            if [[ $DB_TYPE = "pg" ]]; then
+                RUN_CMD="pg_dump -h $HOST -d $DB_NAME -U postgres $TABLESTR | gzip > /home/app/dumps/$DB_NAME.gz"
             fi
         fi
 
-        if [[ $DB_TYPE = "pg" ]]; then
-            if [[ $CMD = "dump" ]]; then
-                RUN_CMD="pg_dump -h $HOST -d $DB_NAME -U postgres $TABLESTR | gzip > /home/app/dumps/$DB_NAME.gz"
-            fi
-            if [[ $CMD = "import" ]]; then
-                RUN_CMD="gunzip -c /home/app/dumps/$FILENAME | psql -h $HOST -d $DB_NAME -U postgres"
-            fi
+        if [[ $CMD = "import" ]]; then
+            DOCKER="docker run -v $DUMP_FILE:/home/app/dumps/ --name backup_$DB \
+                -u=$(id -u $(whoami)) --network $NETWORK --rm $IMAGE bash -c"
+
+                if [[ $DB_TYPE = "mongo" ]]; then
+                    RUN_CMD="mongorestore --host $HOST --db $DB_NAME /home/app/dumps/$FILENAME/"
+                fi
+
+                if [[ $DB_TYPE = "pg" ]]; then
+                    RUN_CMD="gunzip -c /home/app/dumps/$FILENAME | psql -h $HOST -d $DB_NAME -U postgres"
+                fi
         fi
 
         $DOCKER "$RUN_CMD"
@@ -565,7 +578,11 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
         VOLUME=$(docker volume inspect temp_"$DB_TYPE")
         CONTAINER=$(docker inspect "$DB_TYPE"_server)
 
-        if [[ ! $CONTAINER = '[]' ]]; then echo "$DB_TYPE"_server "container already exists."; exit; fi
+        if [[ ! $CONTAINER = '[]' ]]; then
+            echo "$DB_TYPE"_server "container already exists, starting.";
+            docker start "$DB_TYPE"_server
+            exit;
+        fi
 
         if [[ $VOLUME = '[]' ]]; then
             echo "Creating blank volume"
@@ -600,9 +617,38 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
         # return run('docker', ['exec', settings.SERVER_NAME, "bash", "-c", `dropdb ${config.DB_NAME} -U postgres `], {logStdOut: true, logStdErr: true})
     fi
 
-    if [[ $DB_TYPE = "mongo" ]]; then shift && docker exec -it mongo_server mongo $@; fi
-    if [[ $DB_TYPE = "pg" ]]; then shift && docker exec -it pg_server psql -U postgres $@; fi
+    if [[ $2 = "exec" ]]; then
+        if [[ $DB_TYPE = "mongo" ]]; then shift; shift && docker exec -it mongo_server mongo $@; exit; fi
+        if [[ $DB_TYPE = "pg" ]]; then shift; shift && docker exec -it pg_server psql -U postgres $@; exit; fi
+    fi
 
+    if [[ $2 = "rm" ]]; then
+        DB_NAME=$3
+        if [[ -z $DB_NAME ]]; then
+            echo "Please specify database"
+            echo "Usage:"
+            echo "$0 [pg|mongo] rm DATABASE_NAME"
+            exit;
+        fi
+        if [[ $DB_TYPE = "mongo" ]]; then
+            docker exec mongo_server mongo $DB_NAME --eval "printjson(db.dropDatabase())"
+            exit;
+            # shift; shift && docker exec -it mongo_server mongo $@;
+        fi
+
+        if [[ $DB_TYPE = "pg" ]]; then
+            docker exec pg_server dropdb $DB_NAME -U postgres
+            exit;
+            # shift; shift && docker exec -it pg_server psql -U postgres $@;
+        fi
+
+        echo "Available commands"
+        echo "$(basename $0) rm [pg|mongo] DATABASE_NAME"
+        exit;
+    fi
+
+    echo "Available commands"
+    echo "$(basename $0) [pg|mongo] [exec|start|import|dump|clean]"
     exit;
 fi
 
