@@ -490,8 +490,8 @@ if [[ $1 = "build" ]]; then
 
     LOGIN="docker login $CREDS";
     REPO=${PWD##*/}
-    IMAGE=$(docker-compose config | grep image | tail -1 | cut -d ":" -f 2 | awk '{$1=$1};1')
-    VER=$(docker-compose config | grep image | tail -1 | cut -d ":" -f 3 | awk '{$1=$1};1')
+    IMAGE=$(docker-compose config | grep 'image.*/' | tail -1 | cut -d ":" -f 2 | awk '{$1=$1};1')
+    VER=$(docker-compose config | grep 'image.*/' | tail -1 | cut -d ":" -f 3 | awk '{$1=$1};1')
     CMD="cd ~/builds/$REPO; docker-compose build; docker tag $IMAGE:$VER $IMAGE:latest;"
     CMD="$CMD $LOGIN; docker-compose push; docker push $IMAGE:latest;"
     CMD="$CMD docker rmi \$(docker images -f 'dangling=true' -q);"
