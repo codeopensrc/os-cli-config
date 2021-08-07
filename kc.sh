@@ -5,70 +5,115 @@ INITIALIFS=$IFS;
 # Technique for future reference to "expose" a running container to dif port
 # docker exec -it <containterid> ssh -R5432:localhost:5432 <user>@<hostip>
 
-source $HOME/code/secrets/variables.sh
+#source $HOME/code/local/misc-secrets/variables.sh
+
+CLI_CONFIG_DIR=$(dirname $(readlink -f $0))
+
+REVIEW_THIS() {
+    printf "Attempted: $1\n"
+    printf "This function needs to be reviewed again before use\n";
+    exit
+}
 
 if [ "$1" = "load" ]; then
-    sudo cp $HOME/code/configs/kc.sh /usr/local/bin/kc && sudo chmod +x /usr/local/bin/kc
-    echo "Loaded"
+    if [[ $USER == "root" ]]; then
+        if [[ ! -f "/usr/local/bin/kc" ]]; then
+            ln -s $(readlink -f $0) /usr/local/bin/kc
+            chmod +x /usr/local/bin/kc
+        fi
+        echo "Loaded";
+        exit
+    fi
+
+    mkdir -p $HOME/.local/bin
+    if [[ ! -f "$HOME/.local/bin/kc" ]]; then
+        echo "Not Found in $HOME/.local/bin"
+        ln -s $(readlink -f $0) $HOME/.local/bin/kc
+        chmod +x ~/.local/bin/kc
+        echo "Linked $HOME/.local/bin/kc to $(readlink -f $0)"
+    fi
+
+    if [[ ! $PATH =~ .*$HOME/\.local/bin.* ]]; then
+        printf "\$HOME/.local/bin not in \$PATH \nCurrent \$PATH=$PATH \n"
+        sed -i --follow-symlinks "1i export PATH=\$PATH:\$HOME\/.local\/bin" $HOME/.bash_profile
+        printf "Added 'export PATH=\$PATH:\$HOME/.local/bin' to $HOME/.bash_profile\n"
+        printf "Source the file by entering 'source \$HOME/.bash_profile'\n"
+        exit
+    fi;
+    echo "Loaded";
     exit;
 fi
 
 if [ "$1" = "link" ]; then
     (cd $HOME &&
-    ln -s $HOME/code/configs/vimrc .vimrc &&
-    ln -s $HOME/code/configs/bash_aliases .bash_aliases &&
-    ln -s $HOME/code/configs/$(uname)/bash_profile .bash_profile &&
-    ln -s $HOME/code/configs/$(uname)/tmux.conf .tmux.conf)
+    ln -s $CLI_CONFIG_DIR/vimrc .vimrc &&
+    ln -s $CLI_CONFIG_DIR/bash_aliases .bash_aliases &&
+    ln -s $CLI_CONFIG_DIR/bash_profile .bash_profile &&
+    ln -s $CLI_CONFIG_DIR/tmux.conf .tmux.conf)
     exit;
 fi
 
 if [ "$1" = "rmlinks" ]; then
-    (cd $HOME && rm .vimrc .bash_aliases .bash_profile .tmux.conf)
+    FILES=(.vimrc .bash_aliases .bash_profile .tmux.conf)
+    printf "Are you sure you want to rm the following links/files in $HOME?\n"
+    printf "%s " "${FILES[@]}"
+    printf "\n[y/n]: "
+    read YN
+    if [[ $YN == "y" ]] || [[ $YN == "Y" ]]; then
+        printf "%s " "Removing files: ${FILES[@]}"
+        printf "\n"
+        (cd $HOME && rm ${FILES[@]})
+    fi
     exit;
 fi
 
 if [ "$1" = "config" ]; then
-    if [[ $2 = "atom" ]]; then atom $HOME/code/configs ;
-    else vim $HOME/code/configs/kc.sh ; fi
+    if [[ $2 = "atom" ]]; then atom $CLI_CONFIG_DIR ;
+    else vim $CLI_CONFIG_DIR/kc.sh ; fi
     exit;
 fi
 
 if [ "$1" = "linkmod" ]; then
+    REVIEW_THIS $1
+
     rm -rf ./node_modules/$2
     ln -s ~/code/mods/$2 ./node_modules/$2
     exit;
 fi
 
 if [ "$1" = "sync" ]; then
-    if [ "$3" = "nh" ] ; then DIRECTION="$2 $NH:$4" ; fi
-    if [ "$3" = "main" ] ; then DIRECTION="$2 $MAIN:$4" ; fi
-
-    if [ "$2" = "nh" ] ; then DIRECTION="$NH:$3 $4" ; fi
-    if [ "$2" = "main" ] ; then DIRECTION="$MAIN:$3 $4" ; fi
-    rsync -avuz -e ssh $DIRECTION
+    # if [ "$3" = "main" ] ; then DIRECTION="$2 $MAIN:$4" ; fi
+    #
+    # if [ "$2" = "main" ] ; then DIRECTION="$MAIN:$3 $4" ; fi
+    # rsync -avuz -e ssh $DIRECTION
     exit;
 fi
 
 if [ "$1" = "ss" ] ; then shift 1; python -m SimpleHTTPServer $@; exit; fi
 
 if [ "$1" = "start" ]; then
-	if [ "$2" = "vpn" ] ; then sudo openvpn --config $HOME/code/vpn/no-route.ovpn; fi
-	if [ "$2" = "route" ] ; then sudo openvpn --config $HOME/code/vpn/route.ovpn; fi
+    REVIEW_THIS $1
+
+    if [ "$2" = "vpn" ] ; then sudo openvpn --config $HOME/code/vpn/no-route.ovpn; fi
+    if [ "$2" = "route" ] ; then sudo openvpn --config $HOME/code/vpn/route.ovpn; fi # --mute-replay-warnings
+    if [ "$2" = "consul" ] ; then
+        docker run -d --name=dev-consul --net=host -e CONSUL_BIND_INTERFACE=docker0 -e 'CONSUL_LOCAL_CONFIG={"enable_script_checks": true}' consul;
+    fi
     exit;
 fi
 
 ############# SSH STUFF ##########
 ############# SSH STUFF ##########
-if [ "$1" = "nh" ] ; then shift 1; ssh $NH $@; exit; fi
-if [ "$1" = "git" ] ; then shift 1; ssh $GITMAIN $@; exit; fi
+# if [ "$1" = "git" ] ; then shift 1; ssh $GITMAIN $@; exit; fi
 if [ "$1" = "main" ] ; then shift 1; ssh $MAIN $@; exit; fi
 if [ "$1" = "vpn" ] ; then shift 1; ssh $VPNSERVER $@; exit; fi
 
 if [[ $1 = "copykey" ]]; then
+    REVIEW_THIS $1
+
     REMOTE=""
-    if [[ -z $2 ]] ; then echo "Specifiy location to copy key to {nh|git|main}."; exit ; fi
-    if [ "$2" = "nh" ] ; then REMOTE="ssh $NH" ; fi
-    if [ "$2" = "git" ] ; then echo "addkey $(cat ~/.ssh/id_rsa.pub)" | ssh $GITMAIN; exit; fi
+    if [[ -z $2 ]] ; then echo "Specifiy location to copy key to {git|main}."; exit ; fi
+    # if [ "$2" = "git" ] ; then echo "addkey $(cat ~/.ssh/id_rsa.pub)" | ssh $GITMAIN; exit; fi
     if [ "$2" = "main" ] ; then REMOTE="ssh $MAIN" ; fi
     if [ -z "$REMOTE" ] ; then REMOTE="ssh $2" ; fi
     cat $HOME/.ssh/id_rsa.pub | $REMOTE "cat >> ~/.ssh/authorized_keys"
@@ -76,6 +121,7 @@ if [[ $1 = "copykey" ]]; then
 fi
 
 if [[ $1 = "tunnel" ]]; then
+    REVIEW_THIS $1
 
     if [[ $2 = "from" ]]; then
         # kc tunnel from kc@111.111.111.111 into localhost:22 from port 33
@@ -95,13 +141,14 @@ fi
 ############# GIT STUFF ##########
 ############# GIT STUFF ##########
 if [ "$1" = "clone" ]; then
-    if [ ! "$2" = "nh" ] && [ ! "$2" = "main" ]  && [ ! "$2" = "bit" ] && [ ! "$2" = "server" ]; then
-        echo "Please specify 'nh', 'main', 'bit', or 'server' as 2nd arg"; exit;
+    REVIEW_THIS $1
+
+    if [ ! "$2" = "main" ]; then
+        echo "Please specify 'main' as 2nd arg"; exit;
     fi
-    if [ "$2" = "nh" ] ; then URL=$NH:/opt/git/$3.git ; fi
-    if [ "$2" = "main" ] ; then URL=$GITMAIN:$3.git ; fi
-    if [ "$2" = "bit" ] ; then URL=$BIT:JestrJ/$3.git ; fi
-    if [ "$2" = "server" ] ; then URL=$BITSERVER/JestrJ/$3.git ; fi
+    # if [ "$2" = "main" ] ; then URL=$GITMAIN:$3.git ; fi
+
+    if [[ -z $URL ]]; then printf "Incorrect option\n"; exit; fi;
 
     FOLDER=$4
     if [ -z "$FOLDER" ] ; then FOLDER=$3 ; fi
@@ -110,7 +157,9 @@ if [ "$1" = "clone" ]; then
 fi
 
 if [ "$1" = "initrepo" ]; then
-    if [ ! "$2" = "nh" ] && [ ! "$2" = "main" ] ; then echo "Please specify 'nh' or 'main' as 2nd arg" ; exit; fi
+    REVIEW_THIS $1
+
+    if [ ! "$2" = "main" ] ; then echo "Please specify 'main' as 2nd arg" ; exit; fi
     git init
     git add -A && git commit -m "Init"
     $0 pushrepo $2 $3
@@ -118,13 +167,14 @@ if [ "$1" = "initrepo" ]; then
 fi
 
 if [ "$1" = "pushrepo" ]; then
+    REVIEW_THIS $1
+
     REPO=${PWD##*/}
     REPONAME=$3
-    if [ ! "$2" = "nh" ] && [ ! "$2" = "main" ] ; then echo "Please specify 'nh' or 'main' as 2nd arg" ; exit; fi
+    if [ ! "$2" = "main" ] ; then echo "Please specify 'main' as 2nd arg" ; exit; fi
 
     if [ -z "$REPONAME" ] ; then REPONAME=$REPO ; fi
-    if [ "$2" = "nh" ] ; then URL=$NH:/opt/git/ LOC=/opt/git; fi
-    if [ "$2" = "main" ] ; then URL=$GITMAIN: LOC=/home/git; fi
+    # if [ "$2" = "main" ] ; then URL=$GITMAIN: LOC=/home/git; fi
 
     $0 $2 "mkdir $LOC/$REPONAME.git && cd $LOC/$REPONAME.git && git --bare init"
     git remote add origin $URL$REPONAME.git
@@ -164,6 +214,7 @@ fi
 
 
 if [ "$1" = "diff" ]; then
+    #TODO: Use our current branch name, try to match with remote 
     if [ "$2" = "origin" ] ; then git diff master..origin/master ;
     elif [ "$2" = "local" ] ; then git diff origin/master..master ;
     else git diff ; fi
@@ -171,18 +222,17 @@ if [ "$1" = "diff" ]; then
 fi
 
 if [ "$1" = "seturl" ]; then
+    REVIEW_THIS $1
+
     REPONAME=$3
     if [[ -z $REPONAME ]] ; then REPONAME=${PWD##*/} ; fi
-    if [ "$2" = "nh" ] ; then git remote set-url origin $NH:/opt/git/$REPONAME.git ; fi
-    if [ "$2" = "main" ] ; then git remote set-url origin $GITMAIN:$REPONAME.git ; fi
-    if [ "$2" = "ms" ] ; then git remote set-url origin $GITMS/$REPONAME.git ; fi
-    if [ "$2" = "git" ] ; then git remote set-url origin $GITKC/$REPONAME.git ; fi
-    if [ "$2" = "bit" ] ; then git remote set-url origin $BIT/$REPONAME.git ; fi
-    # if [ "$2" = "server" ] ; then git remote set-url origin $BITSERVER/$REPONAME.git ; fi
+    if [ "$2" = "origin" ] ; then git remote set-url origin $KC/$REPONAME.git ; fi
     exit;
 fi
 
 if [ "$1" = "fetch" ]; then
+    REVIEW_THIS $1
+
     SEDSTART="Untracked|Changes|behind|ahead"
     SEDEND="no changes|nothing added|nothing to"
 
@@ -200,8 +250,8 @@ if [ "$1" = "fetch" ]; then
 fi
 
 if [ "$1" = "repos" ]; then
-    echo "========= NH Repos ========="
-    $0 nh "cd git && ls -l"
+    REVIEW_THIS $1
+
     echo "======== Main Repos ========"
     $0 main "cd git && ls -l"
     exit;
@@ -217,28 +267,49 @@ if [ "$1" = "rmc" ]; then
 fi
 
 if [ "$1" = "rmi" ]; then
-    docker rmi $(docker images -f 'dangling=true' -q)
-    exit;
-fi
+    shift;
+    while getopts "i:b:fa" flag; do
+        # These become set during 'getopts'  --- $OPTIND $OPTARG
+        case "$flag" in
+            i) IMAGE=$OPTARG;;
+            a) ALL=true;;
+            b) BEFORE=$OPTARG;;
+            f) FORCE="-f";;
+        esac
+    done
+    if [[ -z $IMAGE ]]; then echo "Please provide an image the -i flag"; exit; fi
+    if [[ -z $BEFORE ]] && [[ -z $ALL ]]; then echo "Please provide a 'before' date to use for reference with the -b flag or -a for ALL images matching filter"; exit; fi
 
-if [[ $1 = "rmm" ]]; then
-    MACHINES=$(docker-machine ls | grep -v 'NAME' | awk '{ print $1 }')
-    docker-machine rm $MACHINES
-    exit;
-fi
+    if [[ -n $BEFORE ]]; then
+        docker images -f "reference=$IMAGE" -f "before=$BEFORE"
+    elif [[ -n $ALL ]]; then
+        docker images -f "reference=$IMAGE"
+    fi
 
-if [[ $1 = "destroy" ]]; then
-    $0 rmm;
-    terraform destroy;
+    echo -n "Remove the above images? [Y/N]: "
+    read ANSWER
+    if [[ $ANSWER = "y" ]] || [[ $ANSWER = "Y" ]]; then
+
+        if [[ -n $BEFORE ]]; then
+            docker rmi $(docker images -f "reference=$IMAGE" -f "before=$BEFORE" -q) $FORCE
+        elif [[ -n $ALL ]]; then
+            docker rmi $(docker images -f "reference=$IMAGE" -q) $FORCE
+        fi
+
+    fi
     exit;
 fi
 
 if [[ $1 = "registry" ]]; then
+    REVIEW_THIS $1
+
     az acr repository list -n $2 -o json
     exit;
 fi
 
 if [[ $1 = "dlogin" ]]; then
+    REVIEW_THIS $1
+
     CMD="docker login $REGISTRY_NAME -u $REGISTRY_APP_ID -p $REGISTRY_PW"
     if [[ -z $2 ]]; then $CMD;
     else echo "$CMD" | docker-machine ssh $2; fi
@@ -246,12 +317,16 @@ if [[ $1 = "dlogin" ]]; then
 fi
 
 if [[ $1 = "dpush" ]]; then
+    REVIEW_THIS $1
+
     if [[ -z $2 ]]; then echo "Please specify image name" exit; fi
     docker push $REGISTRY_NAME/$2
     exit;
 fi
 
 if [[ $1 = "dswarm" ]]; then
+    REVIEW_THIS $1
+
     if [[ $2 = "reset" ]]; then
         echo  export DOCKER_TLS_VERIFY=""
         echo  export DOCKER_HOST=""
@@ -262,15 +337,19 @@ if [[ $1 = "dswarm" ]]; then
 fi
 
 if [[ $1 = "stack" ]]; then
+    REVIEW_THIS $1
+
     #TODO: Check for docker-compose file if this is ever really "published" formally
-    STACKNAME=$(cat docker-compose.yml | grep "SERVICE_NAME"| cut -d ":" -f 2)
+    STACKNAME=$(docker-compose -f docker-compose.yml config | grep 'image.*/' | tail -1 | cut -d ":" -f 2 | cut -d "/" -f 2 | awk '{$1=$1};1')
     shift;
-    while getopts "m:" flag; do
+    while getopts "m:n:" flag; do
         # These become set during 'getopts'  --- $OPTIND $OPTARG
         case "$flag" in
             m) MACHINE=$OPTARG;;
+            n) STACKNAME=$OPTARG;;
         esac
     done
+    if [[ -z $MACHINE ]]; then echo "Please provide a machine with the -m flag"; exit; fi
     if [[ -z $STACKNAME ]]; then STACKNAME="default"; fi
     eval $(docker-machine env $MACHINE)
     docker stack deploy --compose-file docker-compose.yml $STACKNAME --with-registry-auth
@@ -278,6 +357,8 @@ if [[ $1 = "stack" ]]; then
 fi
 
 if [[ $1 = "dmachine" ]]; then
+    REVIEW_THIS $1
+
     if [[ -z $2 ]]; then echo "Please enter machine name"; exit; fi
     docker-machine create --driver digitalocean \
     --digitalocean-access-token=$DO_DOCKER_MACHINE_TOKEN \
@@ -293,6 +374,8 @@ if [[ $1 = "dmachine" ]]; then
 fi
 
 if [[ $1 = "attach" ]]; then
+    REVIEW_THIS $1
+
     shift;
     while getopts "i:m:" flag; do
         # These become set during 'getopts'  --- $OPTIND $OPTARG
@@ -312,6 +395,7 @@ if [[ $1 = "attach" ]]; then
 fi
 
 if [[ $1 = "swarm" ]]; then
+    REVIEW_THIS $1
 
     if [[ $2 = "init" ]]; then
 
@@ -372,6 +456,7 @@ fi
 ############# CHEF STUFF ##########
 
 if [[ $1 = "chef" ]]; then
+    REVIEW_THIS $1
 
     if [[ $2 = "server" ]]; then
         wget "https://packages.chef.io/files/stable/chef-server/12.15.0/ubuntu/14.04/chef-server-core_12.15.0-1_amd64.deb"
@@ -430,31 +515,10 @@ fi
 ############# END CHEF STUFF ##########
 ############# END CHEF STUFF ##########
 
-############# CONSUL STUFF ##########
-############# CONSUL STUFF ##########
-
-if [[ $2 = "consul" ]]; then
-    wget https://releases.hashicorp.com/consul/0.8.1/consul_0.8.1_linux_amd64.zip
-fi
-############# END CONSUL STUFF ##########
-############# END CONSUL STUFF ##########
-
-if [[ $1 = "deploy" ]]; then
-    if [[ -z $2 ]]; then echo "Please specify project folder name."; exit ; fi
-    CMD="cd ~/apps/$2; git fetch; git reset --hard origin/master;"
-    if [[ $3 = "build" ]]; then CMD="$CMD docker-compose build;"; fi
-    if [[ $3 = "up" ]]; then CMD="$CMD docker-compose up --build -d;"; fi
-    CMD="$CMD docker rmi \$(docker images -f 'dangling=true' -q);"
-    REPO=$(echo $2 | tr '[:lower:]' '[:upper:]')
-    MESSAGE="{\"text\": \"*$REPO* deployed:\n $(git show -q)\"}"
-    ssh $NH $CMD
-    curl -X POST --header "Content-Type: application/json" \
-        $SLACK_DEPLOY_HOOK \
-        -d ''"$MESSAGE"''
-    exit;
-fi
 
 if [[ $1 = "deploysingle" ]]; then
+    REVIEW_THIS $1
+
     shift;
     while getopts "m:" flag; do
         # These become set during 'getopts'  --- $OPTIND $OPTARG
@@ -473,6 +537,7 @@ fi
 
 
 if [[ $1 = "build" ]]; then
+    REVIEW_THIS $1
 
     shift;
     while getopts "m:r:" flag; do
@@ -484,39 +549,97 @@ if [[ $1 = "build" ]]; then
     done
 
     if [[ -z $MACHINE ]]; then echo "Please provide a docker machine using the -m flag"; exit ; fi
-    if [[ $REGISTRY = 'hub' ]] || [[ -z $REGISTRY ]]; then CREDS="-u $DOCKER_HUB_USER -p $DOCKER_HUB_PW" ; fi
-    if [[ $REGISTRY = 'ree' ]]; then CREDS="$REGISTRY_NAME -u $REGISTRY_APP_ID -p $REGISTRY_PW" ; fi
-    if [[ $REGISTRY = 'ms' ]]; then CREDS="-u $MS_DOCKERHUB_USER -p $MS_DOCKERHUB_TOKEN" ; fi
+    if [[ -z $REGISTRY ]]; then echo "Please provide which credentials should be used using the -r flag [hub]"; exit ; fi
+    if [[ $REGISTRY = 'hub' ]]; then CREDS="-u $DOCKER_HUB_USER -p $DOCKER_HUB_PW" ; fi
 
     LOGIN="docker login $CREDS";
     REPO=${PWD##*/}
-    IMAGE=$(docker-compose config | grep 'image.*/' | tail -1 | cut -d ":" -f 2 | awk '{$1=$1};1')
-    VER=$(docker-compose config | grep 'image.*/' | tail -1 | cut -d ":" -f 3 | awk '{$1=$1};1')
-    CMD="cd ~/builds/$REPO; docker-compose build; docker tag $IMAGE:$VER $IMAGE:latest;"
-    CMD="$CMD $LOGIN; docker-compose push; docker push $IMAGE:latest;"
+    IMAGE=$(docker-compose -f docker-compose.yml config | grep 'image.*/' | tail -1 | cut -d ":" -f 2 | awk '{$1=$1};1')
+    VER=$(docker-compose -f docker-compose.yml config | grep 'image.*/' | tail -1 | cut -d ":" -f 3 | awk '{$1=$1};1')
+    CMD="cd ~/builds/$REPO; docker-compose build main; docker tag $IMAGE:$VER $IMAGE:latest;"
+    CMD="$CMD $LOGIN; docker-compose push main; docker push $IMAGE:latest;"
     CMD="$CMD docker rmi \$(docker images -f 'dangling=true' -q);"
     IP=$(docker-machine ip $MACHINE)
 
-    rsync -avuz --exclude=".git" --exclude="node_modules" --exclude="server/output" --exclude="tempdbdump" . root@$IP:~/builds/$REPO
+    # rsync -avuz --exclude=".git" --exclude="node_modules" --exclude="tempdbdump" . root@$IP:~/builds/$REPO
+    rsync -avuz --exclude=".git" --exclude="node_modules" --exclude="server/output/*" --exclude="tempdbdump" . root@$IP:~/builds/$REPO
     ssh root@$IP $CMD
     exit;
 fi
 
+if [[ $1 = "push" ]]; then
+    REVIEW_THIS $1
 
-if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
+    shift;
+    while getopts "ta" flag; do
+        # These become set during 'getopts'  --- $OPTIND $OPTARG
+        case "$flag" in
+            t) TAG_AS_LATEST=true;;
+            a) AWS=true;;
+        esac
+    done
+
+    REPO=${PWD##*/}
+    IMAGE=$(docker-compose -f docker-compose.yml config | grep 'image.*/*[0-9]' | tail -1 | cut -d ":" -f 2 | awk '{$1=$1};1')
+    VER=$(docker-compose -f docker-compose.yml config | grep 'image.*/*[0-9]' | tail -1 | cut -d ":" -f 3 | awk '{$1=$1};1')
+
+    docker-compose build main
+    docker-compose push main
+    if [[ $TAG_AS_LATEST = "true" ]]; then
+        docker tag $IMAGE:$VER $IMAGE:latest;
+        docker push $IMAGE:latest;
+    fi
+
+    # Before we push to AWS again, we have to cut out project path
+    # Before it was DOMAIN/image:ver, now its registry.*/owner/image:ver
+    if [[ $AWS = "true" ]]; then
+        #source $HOME/code/local/misc-secrets/variables.sh
+        LOGIN=$(aws --profile default ecr get-login --no-include-email --region us-east-2)
+        $LOGIN
+
+        AWS_ECR_NUM="000000000"
+        AWS_ECR_REGION="us-east-2"
+        # Tag and push to amazon as well
+        docker tag $IMAGE:$VER ${AWS_ECR_NUM}.dkr.ecr.${AWS_ECR_REGION}.amazonaws.com/$IMAGE:$VER;
+        docker push ${AWS_ECR_NUM}.dkr.ecr.${AWS_ECR_REGION}.amazonaws.com/$IMAGE:$VER;
+        docker tag $IMAGE:$VER ${AWS_ECR_NUM}.dkr.ecr.${AWS_ECR_REGION}.amazonaws.com/$IMAGE:latest;
+        docker push ${AWS_ECR_NUM}.dkr.ecr.${AWS_ECR_REGION}.amazonaws.com/$IMAGE:latest;
+    fi
+    # CMD="$CMD docker rmi \$(docker images -f 'dangling=true' -q);"
+    exit;
+fi
+
+if [[ $1 = "watch" ]]; then
+    SERVICE_NAME=${PWD##*/}_dev_1
+    SERVICE_NAME=${SERVICE_NAME//./}
+    docker exec $SERVICE_NAME npm run watch
+    exit;
+fi
+
+if [[ $1 = "exec" ]]; then
+    SERVICE_NAME=${PWD##*/}_dev_1
+    SERVICE_NAME=${SERVICE_NAME//./}
+    docker exec -it $SERVICE_NAME bash
+    exit;
+fi
+
+if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]] || [[ $1 = "redis" ]]; then
     DB_TYPE=$1
     MONGO_IMAGE="mongo"
     PG_IMAGE="postgres:9.5"
+    REDIS_IMAGE="redis:4.0.2"
 
     if [[ $2 = "dump" ]] || [[ $2 = "import" ]]; then
         CMD=$2
         if [[ $DB_TYPE = "mongo" ]]; then DB="mongo"; IMAGE=$MONGO_IMAGE; fi
         if [[ $DB_TYPE = "pg" ]]; then DB="pg"; IMAGE=$PG_IMAGE; fi
+        if [[ $DB_TYPE = "redis" ]]; then DB="redis"; IMAGE=$REDIS_IMAGE; fi
 
         shift; shift;
-        while getopts "d:h:f:t:" flag; do
+        while getopts "cd:h:f:t:" flag; do
             # These become set during 'getopts'  --- $OPTIND $OPTARG
             case "$flag" in
+                c) CREATE_DB=true;;
                 d) DB_NAME=$OPTARG;;
                 f) DUMP_FILE=$OPTARG;;
                 h) HOST=$OPTARG;;
@@ -545,31 +668,46 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
 
         NETWORK=$DB_TYPE"0"
         if [[ $CMD = "dump" ]]; then
-            DOCKER="docker run -v $PWD/tempdbdump:/home/app/dumps --name backup_$DB \
+            DOCKER="docker run -v $PWD/tempdbdump:/dumps --name backup_$DB \
                 -u=$(id -u $(whoami)) --network $NETWORK --rm $IMAGE bash -c"
 
             if [[ $DB_TYPE = "mongo" ]]; then
-                RUN_CMD="mongodump --host $HOST --db $DB_NAME --out /home/app/dumps/"
+                RUN_CMD="mongodump --host $HOST --db $DB_NAME --out /dumps/"
             fi
 
             if [[ $DB_TYPE = "pg" ]]; then
-                RUN_CMD="pg_dump -h $HOST -d $DB_NAME -U postgres $TABLESTR | gzip > /home/app/dumps/$DB_NAME.gz"
+                RUN_CMD="pg_dump -h $HOST -d $DB_NAME -U postgres $TABLESTR | gzip > /dumps/$DB_NAME.gz"
+            fi
+
+            if [[ $DB_TYPE = "redis" ]]; then
+                RUN_CMD="redis-cli -h $HOST save && redis-cli -h $HOST --rdb /dumps/$DB_NAME.rdb"
             fi
         fi
 
         if [[ $CMD = "import" ]]; then
-            DOCKER="docker run -v $DUMP_FILE:/home/app/dumps/ --name backup_$DB \
-                -u=$(id -u $(whoami)) --network $NETWORK --rm $IMAGE bash -c"
+            DOCKER="docker run -v $PWD/tempdbdump:/dumps --name backup_$DB \
+                 --network $NETWORK --rm $IMAGE bash -c"
 
                 if [[ $DB_TYPE = "mongo" ]]; then
-                    RUN_CMD="mongorestore --host $HOST --db $DB_NAME /home/app/dumps/$FILENAME/"
+                    RUN_CMD="mongorestore --host $HOST --db $DB_NAME /dumps/$FILENAME/"
                 fi
 
                 if [[ $DB_TYPE = "pg" ]]; then
-                    RUN_CMD="gunzip -c /home/app/dumps/$FILENAME | psql -h $HOST -d $DB_NAME -U postgres"
+                    RUN_CMD="gunzip -c /dumps/$FILENAME | psql -h $HOST -d $DB_NAME -U postgres"
+                    if [[ $CREATE_DB ]]; then RUN_CMD="createdb -h $HOST -U postgres $DB_NAME; $RUN_CMD"; fi
+                    # exit
+                fi
+
+                if [[ $DB_TYPE = "redis" ]]; then
+                    docker run -v $PWD/tempdbdump/$FILENAME:/data/dump.rdb \
+                        -d --rm --name backup_$DB --network $NETWORK $IMAGE redis-server
+
+                    docker exec backup_$DB bash -c "redis-cli --raw KEYS '*' | xargs redis-cli MIGRATE $HOST 6379 '' 0 5000 COPY KEYS";
+                    echo 'redis-cli --raw KEYS "*" | xargs redis-cli MIGRATE $HOST 6379 "" 0 5000 COPY KEYS'
+                    docker stop backup_$DB;
+                    exit;
                 fi
         fi
-
         $DOCKER "$RUN_CMD"
         exit;
     fi
@@ -591,12 +729,17 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
 
         if [[ $DB_TYPE = "pg" ]]; then
             docker run -v temp_"$DB_TYPE":/var/lib/postgresql/data --network pg0 -d -p 172.17.0.1:5432:5432 \
-             --name "$DB_TYPE"_server $PG_IMAGE
+            --name "$DB_TYPE"_server $PG_IMAGE
         fi
 
         if [[ $DB_TYPE = "mongo" ]]; then
             docker run -v temp_"$DB_TYPE":/data/db --network mongo0 -d -p 172.17.0.1:27017:27017 \
             --name "$DB_TYPE"_server $MONGO_IMAGE
+        fi
+
+        if [[ $DB_TYPE = "redis" ]]; then
+            docker run -v temp_"$DB_TYPE":/data --network redis0 -d -p 172.17.0.1:6379:6379 \
+            --name "$DB_TYPE"_server $REDIS_IMAGE
         fi
         exit;
     fi
@@ -604,7 +747,7 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
     if [[ $2 = "clean" ]]; then
         exit;
         shift; shift;
-        while getopts "d:h:y:" flag; do
+        while getopts "d:h:y" flag; do
             # These become set during 'getopts'  --- $OPTIND $OPTARG
             case "$flag" in
                 d) DB_NAME=$OPTARG;;
@@ -612,7 +755,7 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
                 y) IS_SURE=true;;
             esac
         done
-        if [[ ! IS_SURE ]]; then echo "Use the -y flag if youre sure you wish to drop '$DB_NAME' from $HOST"; exit; fi
+        if [[ ! $IS_SURE ]]; then echo "Use the -y flag if youre sure you wish to drop '$DB_NAME' from $HOST"; exit; fi
         # return run('docker', ['exec', settings.SERVER_NAME, "bash", "-c", `mongo ${config.DB_NAME} --eval "printjson(db.dropDatabase())"`],
         # return run('docker', ['exec', settings.SERVER_NAME, "bash", "-c", `dropdb ${config.DB_NAME} -U postgres `], {logStdOut: true, logStdErr: true})
     fi
@@ -620,6 +763,7 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
     if [[ $2 = "exec" ]]; then
         if [[ $DB_TYPE = "mongo" ]]; then shift; shift && docker exec -it mongo_server mongo $@; exit; fi
         if [[ $DB_TYPE = "pg" ]]; then shift; shift && docker exec -it pg_server psql -U postgres $@; exit; fi
+        if [[ $DB_TYPE = "redis" ]]; then shift; shift && docker exec -it redis_server redis-cli $@; exit; fi
     fi
 
     if [[ $2 = "rm" ]]; then
@@ -631,12 +775,14 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
             exit;
         fi
         if [[ $DB_TYPE = "mongo" ]]; then
+            echo "Dropping $DB_NAME from mongo"
             docker exec mongo_server mongo $DB_NAME --eval "printjson(db.dropDatabase())"
             exit;
             # shift; shift && docker exec -it mongo_server mongo $@;
         fi
 
         if [[ $DB_TYPE = "pg" ]]; then
+            echo "Dropping $DB_NAME from pg"
             docker exec pg_server dropdb $DB_NAME -U postgres
             exit;
             # shift; shift && docker exec -it pg_server psql -U postgres $@;
@@ -648,11 +794,12 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]]; then
     fi
 
     echo "Available commands"
-    echo "$(basename $0) [pg|mongo] [exec|start|import|dump|clean]"
+    echo "$(basename $0) [pg|mongo] [exec|start|import|dump|rm]"
     exit;
 fi
 
-echo "Require no args: [load | link | rmlinks | config | mongo | pg | ss | nh | \
-    git | main | vpn | fetch | repos | rmc | rmi]"
-echo "Require args: [linkmod | sync | start | copykey | clone | initrepo | pushrepo | \
-    tag | diff | seturl | registry | dlogin | dpush | stack | deploy | db | mongodump | pgdump]"
+
+
+
+############# END  STUFF ##########
+############# END  STUFF ##########

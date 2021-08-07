@@ -1,50 +1,50 @@
 #!/bin/bash
 
-function bashp() {
-    vim $HOME/code/configs/$(uname)/bash_profile
-}
+CODE_DIR=$HOME/all/code
+if [[ $USER == root ]]; then CODE_DIR=$HOME/code; fi
 
-function basha() {
-    vim $HOME/code/configs/bash_aliases
-}
-
-function bashar() {
+function bashr() {
     source $HOME/.bash_aliases
-}
-
-function bashreset() {
     source $HOME/.bash_profile
 }
-
-function work() {
-    cd $HOME/code/work
+function bashp() {
+    vim $HOME/.bash_profile
 }
-
-function loc() {
-    cd $HOME/code/local
+function basha() {
+    vim $HOME/.bash_aliases
 }
-
-function mods() {
-    cd $HOME/code/mods
-}
-
 function code() {
-    cd $HOME/code
+    cd $CODE_DIR
 }
 
-function showall() {
-    defaults write com.apple.finder AppleShowAllFiles
+function tmuxcolors() {
+    for i in {0..255}; do
+        printf "\x1b[38;5;${i}mcolor%-5i\x1b[0m" $i ;
+        if ! (( ($i + 1 ) % 8 )); then echo ; fi ; 
+    done
 }
 
-function repo() {
-	cd $(find $HOME/code -maxdepth 2 -iname $@ -type d -exec echo '{}' \;)
-}
 
-function rename() {
-    echo "Check and modify aliases before using"
-    return
-	for f in *$2*
-	do
-		mv $f $(echo $f | sed "$1")
-	done
-}
+#### WINDOWS WSL
+
+##function vscode() {
+##    "/mnt/c/Program Files (x86)/Microsoft VS Code/bin/code" $1
+##}
+
+
+
+#### DARWIN / OSX
+
+##function showall() {
+##    defaults write com.apple.finder AppleShowAllFiles
+##}
+##
+##function bulkrename() {
+##    echo "Check and modify aliases before using"
+##    return
+##
+##    for f in *$2*
+##    do
+##        mv $f $(echo $f | sed "$1")
+##    done
+##}
