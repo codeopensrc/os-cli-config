@@ -16,4 +16,4 @@ $HOME/.tmux/plugins/tpm/bin/install_plugins
 
 ## vim-plug for vim
 curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-vim -es -u vimrc -i NONE -c "PlugInstall" -c "qa"
+vim -es -u $HOME/.vimrc -i NONE -c "PlugInstall" -c "qa"
