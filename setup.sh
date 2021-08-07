@@ -3,10 +3,10 @@
 CLI_CONFIG_DIR=$HOME/all/code
 if [[ $USER = "root" ]]; then CLI_CONFIG_DIR=$HOME/code; fi
 
-git clone https://gitlab.codeopensrc.com/os/cli-config.git $CLI_CONFIG_DIR
+git -C $CLI_CONFIG_DIR clone https://gitlab.codeopensrc.com/os/cli-config.git
 
-bash $CLI_CONFIG_DIR/kc.sh load
-bash $CLI_CONFIG_DIR/kc.sh link
+bash $CLI_CONFIG_DIR/cli-config/kc.sh load
+bash $CLI_CONFIG_DIR/cli-config/kc.sh link
 
 
 ## tpm for tmux
