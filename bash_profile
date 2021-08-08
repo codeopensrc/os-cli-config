@@ -1,6 +1,11 @@
 export EDITOR=/usr/bin/vim
 export PATH=$PATH:$HOME/.local/bin
 
+if [ -f ~/.bashrc ]; then
+    TERM=xterm-color
+    . ~/.bashrc
+    TERM=screen-256color
+fi
 #### WINDOWS WSL
 #
 #export DOCKER_HOST=localhost:2375
