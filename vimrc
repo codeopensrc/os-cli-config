@@ -58,11 +58,13 @@ syntax on
 "nnoremap <Leader>e :33Lexplore<CR>
 nnoremap <Leader>e :NERDTreeToggleVCS %<CR><C-w><C-p>
 nnoremap <Leader>E :e $MYVIMRC<CR>
+nnoremap <Leader>EE :so $MYVIMRC<CR>
 nnoremap <Leader>r :set hls!<CR>
 nnoremap <Leader>c :set relativenumber!<CR>
 nnoremap <Leader>R :NERDTreeRefreshRoot<CR>:NERDTreeRefreshRoot<CR>
 nnoremap <Leader>f :vimgrep /
 nnoremap <Leader>FF :FZF<CR>
+nnoremap <Leader>A :Ag<CR>
 nnoremap <Leader>F :NERDTreeFind<CR>
 nnoremap <Leader>t :tabnew
 nnoremap <Leader>H :tab h 

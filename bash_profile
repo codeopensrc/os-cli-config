@@ -4,8 +4,19 @@ export PATH=$PATH:$HOME/.local/bin
 if [ -f ~/.bashrc ]; then
     TERM=xterm-color
     . ~/.bashrc
+
+    LS_COLORS=$LS_COLORS'ow=34;40';
+    export LS_COLORS;
+
+    if [[ $USER == "root" ]]; then
+        ## Change username to red
+        PS1=${PS1/01;32m\\]\\u/01;31m\\]\\u\\[\\033[01;32m\\]}
+    fi
+
     TERM=screen-256color
 fi
+
+
 #### WINDOWS WSL
 #
 #export DOCKER_HOST=localhost:2375

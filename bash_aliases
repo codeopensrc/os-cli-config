@@ -16,6 +16,9 @@ function basha() {
 function code() {
     cd $CODE_DIR
 }
+function opendir() {
+    xdg-open .
+}
 
 function tmuxcolors() {
     for i in {0..255}; do
