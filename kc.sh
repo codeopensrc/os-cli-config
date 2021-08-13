@@ -46,10 +46,13 @@ fi
 
 if [ "$1" = "link" ]; then
     (cd $HOME &&
-    ln -s $CLI_CONFIG_DIR/vimrc .vimrc &&
-    ln -s $CLI_CONFIG_DIR/bash_aliases .bash_aliases &&
-    ln -s $CLI_CONFIG_DIR/bash_profile .bash_profile &&
-    ln -s $CLI_CONFIG_DIR/tmux.conf .tmux.conf)
+    ln -sb $CLI_CONFIG_DIR/vimrc .vimrc &&
+    ln -sb $CLI_CONFIG_DIR/bash_aliases .bash_aliases &&
+    ln -sb $CLI_CONFIG_DIR/bash_profile .bash_profile &&
+    ln -sb $CLI_CONFIG_DIR/tmux.conf .tmux.conf &&
+    mkdir -p $CLI_CONFIG_DIR/backups &&
+    mv .*~ $CLI_CONFIG_DIR/backups)
+    echo "Linked dotfiles and backed up originals to $CLI_CONFIG_DIR/backups"
     exit;
 fi
 
