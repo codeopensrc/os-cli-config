@@ -280,8 +280,8 @@ if [ "$1" = "rmi" ]; then
             f) FORCE="-f";;
         esac
     done
-    if [[ -z $IMAGE ]]; then echo "Please provide an image the -i flag"; exit; fi
-    if [[ -z $BEFORE ]] && [[ -z $ALL ]]; then echo "Please provide a 'before' date to use for reference with the -b flag or -a for ALL images matching filter"; exit; fi
+    if [[ -z $IMAGE ]]; then echo "Please provide an image name using -i flag"; exit; fi
+    if [[ -z $BEFORE ]] && [[ -z $ALL ]]; then echo "Please provide a reference image id to retrieve images created before id using -b or -a for ALL images. Applys only to images matching -i filter"; exit; fi
 
     if [[ -n $BEFORE ]]; then
         docker images -f "reference=$IMAGE" -f "before=$BEFORE"

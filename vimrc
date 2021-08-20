@@ -1,10 +1,10 @@
 "Numbers
 set nu
 
-"Pasting to clipboard - needs +clipbound in vim --version (needs Xserver)
-"set clipboard=unnamedplus  "windows
+"Pasting to clipboard - needs +clipbound in 'vim --version' (needs Xserver)
 "sudo apt-get install vim-gtk or vim-gnome comes with +clipboard
 set clipboard=unnamed     "linux
+"set clipboard=unnamedplus  "windows
 
 "Moves to search as typing
 set incsearch
@@ -24,12 +24,12 @@ let loaded_matchparen = 1
 
 "Sets indent to 4
 set softtabstop=4
-set autoindent
 set shiftwidth=4
 
 "Set tab key to insert spaces
 set expandtab
 set smarttab
+set autoindent
 
 "vims global update time - for gitgutter
 set updatetime=1000
@@ -38,20 +38,22 @@ set updatetime=1000
 set wildmenu                       
 set wildmode=list:longest,full 
 
+"The number of screen lines to keep above and below the cursor
+set scrolloff=2
+
+"Always show status bar
+set laststatus=2
 
 syntax on
 
 
-" Misc possible configs to lookup
-"set laststatus=2
-"filetype plugin indent on
-"set foldmethod=marker
-"filetype on
-"filetype plugin on
-"syntax enable
+""Set the format for file
+"set ff=unix
+"set ff=dos
+"set ff=mac
 
-
-
+""Automatically re-read files if unmodified inside Vim
+"set autoread
 
 
 "================ Mappings ======================
@@ -172,8 +174,9 @@ let g:vim_jsx_pretty_colorful_config = 1
 
 "===== ALE =====
 let g:ale_completion_enabled = 1
-
-
+"https://github.com/dense-analysis/ale/issues/1536
+"Cursor disappears when over error, either delay or disable echo to fix
+let g:ale_echo_delay = 250
 
 "===== OmniSharp =====
 let g:OmniSharp_translate_cygwin_wsl = 1
@@ -250,6 +253,14 @@ let g:lightline = {
 
 
 
+"Forgot why necessary at bottom
+colorscheme monokai
+
+"============== Bottom ===============
+
+
+"========== Unused/saved configs ========
+
 "==== vim-devicons ====
 "let g:webdevicons_enable = 0
 "let g:webdevicons_enable_nerdtree = 0
@@ -297,7 +308,3 @@ let g:lightline = {
 "let g:netrw_silent = 1
 "set noautowrite
 "set confirm
-"
-"
-
-colorscheme monokai

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 export EDITOR=/usr/bin/vim
 export PATH=$PATH:$HOME/.local/bin
 
@@ -11,6 +13,10 @@ if [ -f ~/.bashrc ]; then
     if [[ $USER == "root" ]]; then
         ## Change username to red
         PS1=${PS1/01;32m\\]\\u/01;31m\\]\\u\\[\\033[01;32m\\]}
+    fi
+
+    if [[ $TMPUSER == "demo" ]]; then
+        PS1=${PS1/01;32m\\]\\u@\\h/01;33m\\]demo\\[\\033[01;32m\\]}
     fi
 
     TERM=screen-256color

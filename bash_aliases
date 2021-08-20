@@ -27,6 +27,14 @@ function tmuxcolors() {
     done
 }
 
+function demouser() {
+    if [[ -z "$TMPUSER" ]]; then
+        TMPUSER="demo"
+    else
+        TMPUSER=
+    fi
+    bashr
+}
 
 #### WINDOWS WSL
 
