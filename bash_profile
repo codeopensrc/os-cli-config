@@ -22,6 +22,10 @@ if [ -f ~/.bashrc ]; then
     TERM=screen-256color
 fi
 
+## k8s autocompletion
+if [[ -f $HOME/.local/bin/kubectl ]] || [[ -f /usr/local/bin/kubectl ]]; then
+    source <(kubectl completion bash)
+fi
 
 #### WINDOWS WSL
 #
