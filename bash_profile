@@ -23,7 +23,7 @@ if [ -f ~/.bashrc ]; then
 fi
 
 ## k8s autocompletion
-if [[ -f $HOME/.local/bin/kubectl ]] || [[ -f /usr/local/bin/kubectl ]]; then
+if [[ -f $HOME/.local/bin/kubectl ]] || [[ -f /usr/local/bin/kubectl ]] || [[ -f /usr/bin/kubectl ]]; then
     source <(kubectl completion bash)
 fi
 

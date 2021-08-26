@@ -19,6 +19,9 @@ function code() {
 function opendir() {
     xdg-open .
 }
+function kubeall() {
+    kubectl get nodes,deployments,service,pods -o wide
+}
 
 function tmuxcolors() {
     for i in {0..255}; do

@@ -76,6 +76,17 @@ if [ "$1" = "config" ]; then
     exit;
 fi
 
+if [ "$1" = "curl" ]; then
+    shift;
+    curl --limit-rate 2M "$@" -C -
+    exit;
+
+    # TODO: Download a sample 5M file, get average/max, then use that as base %.
+    # Download at configurable speed - default 75%. Trying not to use full download bandwidth
+    # BONUS: Detect remote filesize to download, if less than 20-30 just download really quick
+    #wget -O /dev/null -q --show-progress
+fi
+
 if [ "$1" = "linkmod" ]; then
     REVIEW_THIS $1
 
