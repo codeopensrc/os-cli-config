@@ -118,9 +118,38 @@ fi
 
 ############# SSH STUFF ##########
 ############# SSH STUFF ##########
+
+if [[ "$1" = "sshconfig" ]]; then
+    REVIEW_THIS $1
+
+    ## General Idea
+    # Edit your own sshconfig file so when sshing into a remote
+    #  machine and (we're assuming tmux available) start a new tmux
+    #  session with your local tmux conf that will use your local
+    #  .vimrc file to edit files
+
+    # Philosphy being you cant always have your own tmux/vimrc file on the
+    #  the remote computer youre accessing (general purpose `deploy` user)
+
+    ### This copys your vimrc remotely but good starter reference
+    #Host *
+    #   PermitLocalCommand yes
+    #   LocalCommand bash -c 'scp -P %p %d/.vimrc %u@%n: &>/dev/null &'
+fi
+
+
+if [[ "$1" = "ssh" ]]; then
+    REVIEW_THIS $1
+    ## See sshconfig but just for one ssh connection
+fi
+
+
 # if [ "$1" = "git" ] ; then shift 1; ssh $GITMAIN $@; exit; fi
 if [ "$1" = "main" ] ; then shift 1; ssh $MAIN $@; exit; fi
 if [ "$1" = "vpn" ] ; then shift 1; ssh $VPNSERVER $@; exit; fi
+
+### TODO: List keys and be able to choose from them by number
+if [[ $1 = "getkey" ]]; then cat $HOME/.ssh/id_rsa.pub; fi
 
 if [[ $1 = "copykey" ]]; then
     REVIEW_THIS $1
@@ -275,9 +304,12 @@ fi
 
 ############# DOCKER STUFF ##########
 ############# DOCKER STUFF ##########
-if [ "$1" = "rmc" ]; then
-	docker rm $(docker ps -aqf status=exited)
-    exit;
+if [ "$1" = "mk" ]; then
+    shift;
+    eval $(minikube docker-env)
+    if [[ "$1" = "build" ]]; then docker-compose build; exit; fi
+    if [[ "$1" = "prune" ]]; then docker image prune; exit; fi
+    if [[ "$1" = "ls" ]]; then docker images; exit; fi
 fi
 
 if [ "$1" = "rmi" ]; then

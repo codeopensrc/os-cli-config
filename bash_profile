@@ -27,6 +27,12 @@ if [[ -f $HOME/.local/bin/kubectl ]] || [[ -f /usr/local/bin/kubectl ]] || [[ -f
     source <(kubectl completion bash)
 fi
 
+## Both effectively do the same thing, disable default CTRL-s from freezing terminal output
+stty -ixon
+#stty stop ''; stty start '';
+
+
+
 #### WINDOWS WSL
 #
 #export DOCKER_HOST=localhost:2375

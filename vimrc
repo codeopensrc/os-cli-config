@@ -31,6 +31,9 @@ set expandtab
 set smarttab
 set autoindent
 
+""" To insert a literal tab character
+"Instead of just pressing Tab, first press Ctrl-V and then press Tab.
+
 "vims global update time - for gitgutter
 set updatetime=1000
 
@@ -75,13 +78,17 @@ nnoremap <Leader>// :set formatoptions+=cro<CR>
 nnoremap <Leader>p :set paste<CR>
 nnoremap <Leader>pp :set nopaste<CR>
 nnoremap <Leader>g :GitGutter<CR>
-nnoremap <Leader>d :tab Git diff
+nnoremap <Leader>d :Git<CR><C-w>L<CR>
+nnoremap <Leader>D :tab Git diff --cached
+nnoremap <Leader>s :NERDTreeClose<CR>:mks!<CR>:NERDTreeToggleVCS %<CR><C-w><C-p>
+nnoremap <Leader>l :source Session.vim<CR>
 nnoremap ,, :bn<CR>
 nnoremap ,p :bp<CR>
 nnoremap ,d :bd<CR>
 nnoremap ,D :bn\|bd #<CR>
 nnoremap ,n :cn<CR>
 nnoremap ,N :cp<CR>
+nnoremap '' "+
 
 inoremap jj <Esc>
 inoremap <C-h> <Left>
@@ -90,6 +97,8 @@ inoremap <C-k> <Up>
 inoremap <C-l> <Right>
 inoremap <C-d> <Del>
 
+vnoremap mm "0p
+vnoremap '' "+y
 
 cnoremap <C-j> <Left>
 cnoremap <C-k> <Right>
@@ -97,6 +106,21 @@ cnoremap <C-k> <Right>
 
 nnoremap ]c :pclose<CR>:GitGutterNextHunk<CR>:GitGutterPreviewHunk<CR>
 nnoremap [c :pclose<CR>:GitGutterPrevHunk<CR>:GitGutterPreviewHunk<CR>
+
+"Add/remove entries from quicklist
+"https://stackoverflow.com/a/51962260
+
+"================ Commands ======================
+"# Write to file with sudo
+command! SW execute "silent! :w !sudo tee %" <bar> edit!
+
+"# Write to file, run command silently, and redraw vim
+command! WE execute ":w <bar> silent! :!bash %" <bar> redraw!
+"# Write to file, run command silently with req args, and redraw vim
+command! -nargs=1 WW execute ":w <bar> silent! :!bash % <args>" <bar> redraw!
+
+"Edit a remote file
+":e scp://USER@SERVER/RELATIVE/TO/USER/HOME/PATH
 
 "To add browsable hunks to quickfix list
 ":GitGutterQuickFix
@@ -163,8 +187,8 @@ call plug#end()
 
 
 "====== fzf ======
-let $FZF_DEFAULT_COMMAND = 'ag --hidden --ignore .git -l -g ""'
-
+"let $FZF_DEFAULT_OPTS = ""
+let $FZF_DEFAULT_COMMAND = 'ag --hidden --ignore node_modules --ignore .git -l -g ""'
 
 
 "====== vim-jsx-pretty =====
