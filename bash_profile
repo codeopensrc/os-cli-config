@@ -2,6 +2,12 @@
 
 export EDITOR=/usr/bin/vim
 export PATH=$PATH:$HOME/.local/bin
+export GPG_TTY=$(tty)
+
+if [ -f ~/.bash_secret ]; then 
+    chmod 600 ~/.bash_secret
+    . ~/.bash_secret
+fi
 
 if [ -f ~/.bashrc ]; then
     TERM=xterm-color

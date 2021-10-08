@@ -1,12 +1,6 @@
 #!/bin/bash
 
 INITIALIFS=$IFS;
-
-# Technique for future reference to "expose" a running container to dif port
-# docker exec -it <containterid> ssh -R5432:localhost:5432 <user>@<hostip>
-
-#source $HOME/code/local/misc-secrets/variables.sh
-
 CLI_CONFIG_DIR=$(dirname $(readlink -f $0))
 
 REVIEW_THIS() {
@@ -150,6 +144,7 @@ if [ "$1" = "vpn" ] ; then shift 1; ssh $VPNSERVER $@; exit; fi
 
 ### TODO: List keys and be able to choose from them by number
 if [[ $1 = "getkey" ]]; then cat $HOME/.ssh/id_rsa.pub; fi
+if [[ $1 = "getgpg" ]]; then gpg --export -a $GPGKEY ; fi
 
 if [[ $1 = "copykey" ]]; then
     REVIEW_THIS $1
@@ -183,6 +178,48 @@ fi
 
 ############# GIT STUFF ##########
 ############# GIT STUFF ##########
+
+if [[ "$1" = "gitconfig" ]]; then
+
+    if [[ -f "$HOME/.gitconfig" ]]; then
+
+        echo -n "Previous $HOME/.gitconfig found, OVERWRITE? (y/n): "
+        read -n 1 OVERWRITE_GITCONFIG 
+        echo
+        if [ "$OVERWRITE_GITCONFIG" != y ]; then exit 0 ; fi
+
+        echo "Saving existing $HOME/.gitconfig to $HOME/.gitconfig.bak"
+        cp --backup=numbered $HOME/.gitconfig $HOME/.gitconfig.bak
+    fi
+
+    GPGSIGN="false"
+    GPGSTRING="#signingkey = ''"
+    if [[ -n $GPGKEY ]]; then GPGSIGN="true"; fi
+    if [[ -n $GPGKEY ]]; then GPGSTRING="signingkey = $GPGKEY"; fi
+
+    echo -n "git config --global user.name: "
+    read GIT_USERNAME 
+    echo -n "git config --global user.email: "
+    read GIT_EMAIL
+
+	cat <<-EOF > $HOME/.gitconfig
+	[user]
+	    email = $GIT_EMAIL
+	    name = $GIT_USERNAME
+	    $GPGSTRING
+	[commit]
+	    gpgsign = $GPGSIGN
+	[credential]
+	    helper = store
+	[alias]
+	    pretty = log --format='%C(auto)%h%d %cd - %s' --date=short
+	    mmwps = push -o merge_request.create -o merge_request.target=master -o merge_request.merge_when_pipeline_succeeds
+	    dmwps = push -o merge_request.create -o merge_request.target=dev -o merge_request.merge_when_pipeline_succeeds
+	EOF
+
+fi
+
+
 if [ "$1" = "clone" ]; then
     REVIEW_THIS $1
 

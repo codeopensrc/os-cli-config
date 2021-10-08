@@ -24,7 +24,7 @@ let loaded_matchparen = 1
 
 "Sets indent to 4
 set softtabstop=4
-set shiftwidth=4
+set shiftwidth=0
 
 "Set tab key to insert spaces
 set expandtab
