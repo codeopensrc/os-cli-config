@@ -22,17 +22,28 @@ set splitright
 set noshowmatch
 let loaded_matchparen = 1
 
-"Sets indent to 4
-set softtabstop=4
-set shiftwidth=0
-
-"Set tab key to insert spaces
-set expandtab
+"Sets indent to 4 spaces and only uses spaces
+"To insert a literal tab, first press Ctrl-v and then press Tab (or our keybind S-Tab).
+set softtabstop=4  "Simulates tab key to go X on tab AND backspace
+set shiftwidth=4   "When using > < for shifting Ident
+set tabstop=8      "Default for vim and many programs (only change if using noexpandtab)
+set expandtab      "Sets tab key to insert spaces
 set smarttab
 set autoindent
 
-""" To insert a literal tab character
-"Instead of just pressing Tab, first press Ctrl-V and then press Tab.
+function TabToggle()
+  if &expandtab        "If using default, switch to tabs (uses tabs but looks like tab = 4 spaces)
+    set tabstop=4
+    set noexpandtab
+    echom 'Set to Tab Ident'
+  elseif &tabstop == 4  "If using tabs, switch to mixed (ident is 4 spaces, 2 ident = tab)
+    set tabstop=8
+    echom 'Set to Mixed Ident'
+  else
+    set expandtab       "Switch back to default (ident is 4 spaces, only spaces no tabs)
+    echom 'Set to Default Ident'
+  endif
+endfunction
 
 "vims global update time - for gitgutter
 set updatetime=1000
@@ -46,6 +57,10 @@ set scrolloff=2
 
 "Always show status bar
 set laststatus=2
+
+"Prevent automatic linebreak (":set nolist" changes these values from default)
+set textwidth=0
+set wrapmargin=0
 
 syntax on
 
@@ -96,6 +111,7 @@ inoremap <C-j> <Down>
 inoremap <C-k> <Up>
 inoremap <C-l> <Right>
 inoremap <C-d> <Del>
+inoremap <S-Tab> <C-V><Tab>
 
 vnoremap mm "0p
 vnoremap '' "+y
@@ -104,6 +120,8 @@ cnoremap <C-j> <Left>
 cnoremap <C-k> <Right>
 
 
+"mz marks line, 'z returns to mark, as execute goes to top of file
+nnoremap <F9> mz:execute TabToggle()<CR>'z
 nnoremap ]c :pclose<CR>:GitGutterNextHunk<CR>:GitGutterPreviewHunk<CR>
 nnoremap [c :pclose<CR>:GitGutterPrevHunk<CR>:GitGutterPreviewHunk<CR>
 

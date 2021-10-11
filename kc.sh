@@ -202,7 +202,7 @@ if [[ "$1" = "gitconfig" ]]; then
     echo -n "git config --global user.email: "
     read GIT_EMAIL
 
-	cat <<-EOF > $HOME/.gitconfig
+    cat <<-EOF > $HOME/.gitconfig
 	[user]
 	    email = $GIT_EMAIL
 	    name = $GIT_USERNAME
