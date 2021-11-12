@@ -1,8 +1,14 @@
 #!/bin/bash
 
 export EDITOR=/usr/bin/vim
-export PATH=$PATH:$HOME/.local/bin
 export GPG_TTY=$(tty)
+export GOPATH=$HOME/.local/go
+
+ADDED_PATHS=$HOME/.local/bin
+ADDED_PATHS=/usr/local/go/bin
+ADDED_PATHS=$ADDED_PATHS:$GOPATH/bin
+
+export PATH=$PATH:$ADDED_PATHS
 
 if [ -f ~/.bash_secret ]; then 
     chmod 600 ~/.bash_secret
