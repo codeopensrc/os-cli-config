@@ -1,6 +1,9 @@
 "Numbers
 set nu
 
+"Backspace for mac
+set backspace=2
+
 "Pasting to clipboard - needs +clipbound in 'vim --version' (needs Xserver)
 "sudo apt-get install vim-gtk or vim-gnome comes with +clipboard
 set clipboard=unnamed     "linux
@@ -45,6 +48,23 @@ function TabToggle()
   endif
 endfunction
 
+
+function EoLToggle()
+  if &endofline
+    set noendofline
+    set nofixendofline
+    echom 'Set noendofline'
+  else
+    set endofline
+    set fixendofline
+    echom 'Set endofline'
+  endif
+endfunction
+
+
+":set list      "View non-printable characters
+":set nolist    "Hide non-printable characters
+
 "vims global update time - for gitgutter
 set updatetime=1000
 
@@ -76,27 +96,31 @@ syntax on
 
 "================ Mappings ======================
 "nnoremap <Leader>e :33Lexplore<CR>
+nnoremap <Leader>A :Ag<CR>
+nnoremap <Leader>c :set relativenumber!<CR>
+nnoremap <Leader>d :Git<CR><C-w>L<CR>
+nnoremap <Leader>D :tab Git diff --cached
 nnoremap <Leader>e :NERDTreeToggleVCS %<CR><C-w><C-p>
 nnoremap <Leader>E :e $MYVIMRC<CR>
 nnoremap <Leader>EE :so $MYVIMRC<CR>
-nnoremap <Leader>r :set hls!<CR>
-nnoremap <Leader>c :set relativenumber!<CR>
-nnoremap <Leader>R :NERDTreeRefreshRoot<CR>:NERDTreeRefreshRoot<CR>
 nnoremap <Leader>f :vimgrep /
 nnoremap <Leader>FF :FZF<CR>
-nnoremap <Leader>A :Ag<CR>
 nnoremap <Leader>F :NERDTreeFind<CR>
-nnoremap <Leader>t :tabnew
+nnoremap <Leader>g :GitGutter<CR>
 nnoremap <Leader>H :tab h 
-nnoremap <Leader>/ :set formatoptions-=cro<CR>
-nnoremap <Leader>// :set formatoptions+=cro<CR>
+nnoremap <Leader>l :source Session.vim<CR>
+"nnoremap <Leader>n :set noendofline<CR>:set nofixendofline<CR>
+nnoremap <Leader>n mz:execute EoLToggle()<CR>'z
 nnoremap <Leader>p :set paste<CR>
 nnoremap <Leader>pp :set nopaste<CR>
-nnoremap <Leader>g :GitGutter<CR>
-nnoremap <Leader>d :Git<CR><C-w>L<CR>
-nnoremap <Leader>D :tab Git diff --cached
+nnoremap <Leader>r :set hls!<CR>
+nnoremap <Leader>R :NERDTreeRefreshRoot<CR>:NERDTreeRefreshRoot<CR>
 nnoremap <Leader>s :NERDTreeClose<CR>:mks!<CR>:NERDTreeToggleVCS %<CR><C-w><C-p>
-nnoremap <Leader>l :source Session.vim<CR>
+nnoremap <Leader>t :tabnew
+nnoremap <Leader>w :vertical resize +10<CR>
+nnoremap <Leader>W :vertical resize -10<CR>
+nnoremap <Leader>/ :set formatoptions-=cro<CR>
+nnoremap <Leader>// :set formatoptions+=cro<CR>
 nnoremap ,, :bn<CR>
 nnoremap ,p :bp<CR>
 nnoremap ,d :bd<CR>
@@ -183,11 +207,12 @@ Plug 'crusoexia/vim-monokai'
 
 
 "====== Syntax Highlight =====
-Plug 'OmniSharp/omnisharp-vim'   "C#
-Plug 'maxmellon/vim-jsx-pretty'  "jsx 
-Plug 'jvirtanen/vim-hcl'         "HCL
-Plug 'yuezk/vim-js'              "js
-"Plug 'pangloss/vim-javascript'  "js
+Plug 'OmniSharp/omnisharp-vim'         "C#
+Plug 'maxmellon/vim-jsx-pretty'        "jsx 
+Plug 'jvirtanen/vim-hcl'               "HCL
+Plug 'yuezk/vim-js'                    "js
+Plug 'martinda/Jenkinsfile-vim-syntax' "Jenkins
+"Plug 'pangloss/vim-javascript'        "js
 
 "Syntax linter
 Plug 'dense-analysis/ale'
@@ -271,6 +296,7 @@ highlight GitGutterDelete guifg=#ff2222 ctermfg=1
 
 "==== vim-lightline =====
 let g:lightline#bufferline#show_number = 1
+"let g:lightline#bufferline#ordinal_separator = '^'
 let g:lightline#bufferline#min_buffer_count = 1
 let g:lightline = {
 \ 'colorscheme': 'molokai',

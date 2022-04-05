@@ -1,7 +1,11 @@
 #!/bin/bash
 
 INITIALIFS=$IFS;
-CLI_CONFIG_DIR=$(dirname $(readlink -f $0))
+if [[ $(uname) == "Darwin" ]]; then
+    CLI_CONFIG_DIR=$( cd "$(dirname "$0")" ; pwd -P )
+else
+    CLI_CONFIG_DIR=$(dirname $(readlink -f $0))
+fi
 
 REVIEW_THIS() {
     printf "Attempted: $1\n"
@@ -39,11 +43,15 @@ if [ "$1" = "load" ]; then
 fi
 
 if [ "$1" = "link" ]; then
+
+    LN_OPTS="-sb"
+    if [[ $(uname) == "Darwin" ]]; then LN_OPTS="-s"; fi
+
     (cd $HOME &&
-    ln -sb $CLI_CONFIG_DIR/vimrc .vimrc &&
-    ln -sb $CLI_CONFIG_DIR/bash_aliases .bash_aliases &&
-    ln -sb $CLI_CONFIG_DIR/bash_profile .bash_profile &&
-    ln -sb $CLI_CONFIG_DIR/tmux.conf .tmux.conf &&
+    ln $LN_OPTS $CLI_CONFIG_DIR/bash_profile .bash_profile &&
+    ln $LN_OPTS $CLI_CONFIG_DIR/vimrc .vimrc &&
+    ln $LN_OPTS $CLI_CONFIG_DIR/bash_aliases .bash_aliases &&
+    ln $LN_OPTS $CLI_CONFIG_DIR/tmux.conf .tmux.conf &&
     mkdir -p $CLI_CONFIG_DIR/backups &&
     mv .*~ $CLI_CONFIG_DIR/backups)
     echo "Linked dotfiles and backed up originals to $CLI_CONFIG_DIR/backups"
