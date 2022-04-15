@@ -96,6 +96,7 @@ syntax on
 
 "================ Mappings ======================
 "nnoremap <Leader>e :33Lexplore<CR>
+nnoremap <Leader>a :Ag <C-R><C-W><CR>
 nnoremap <Leader>A :Ag<CR>
 nnoremap <Leader>c :set relativenumber!<CR>
 nnoremap <Leader>d :Git<CR><C-w>L<CR>
@@ -113,6 +114,8 @@ nnoremap <Leader>l :source Session.vim<CR>
 nnoremap <Leader>n mz:execute EoLToggle()<CR>'z
 nnoremap <Leader>p :set paste<CR>
 nnoremap <Leader>pp :set nopaste<CR>
+nnoremap <Leader>q :resize +5<CR>
+nnoremap <Leader>Q :resize -5<CR>
 nnoremap <Leader>r :set hls!<CR>
 nnoremap <Leader>R :NERDTreeRefreshRoot<CR>:NERDTreeRefreshRoot<CR>
 nnoremap <Leader>s :NERDTreeClose<CR>:mks!<CR>:NERDTreeToggleVCS %<CR><C-w><C-p>
@@ -232,6 +235,12 @@ call plug#end()
 "====== fzf ======
 "let $FZF_DEFAULT_OPTS = ""
 let $FZF_DEFAULT_COMMAND = 'ag --hidden --ignore node_modules --ignore .git -l -g ""'
+" Defaults
+"let g:fzf_action = {
+"  \ 'ctrl-t': 'tab split',
+"  \ 'ctrl-x': 'split',
+"  \ 'ctrl-v': 'vsplit',
+"  \}
 
 
 "====== vim-jsx-pretty =====
