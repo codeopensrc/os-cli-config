@@ -1,13 +1,13 @@
 #!/bin/bash
 
-CLI_CONFIG_DIR=$HOME/all/code
-if [[ $USER = "root" ]]; then CLI_CONFIG_DIR=$HOME/code; fi
+CODE_DIR=$HOME/all/code
+if [[ $USER = "root" ]]; then CODE_DIR=$HOME/code; fi
+CLI_CONFIG_DIR=$CODE_DIR/cli-config
 
-git -C $CLI_CONFIG_DIR clone https://gitlab.codeopensrc.com/os/cli-config.git
+git -C $CODE_DIR clone https://gitlab.codeopensrc.com/os/cli-config.git $CLI_CONFIG_DIR
 
-bash $CLI_CONFIG_DIR/cli-config/kc.sh load
-bash $CLI_CONFIG_DIR/cli-config/kc.sh link
-
+bash $CLI_CONFIG_DIR/kc.sh load
+bash $CLI_CONFIG_DIR/kc.sh link
 
 ## tpm for tmux
 mkdir -p $HOME/.tmux/plugins

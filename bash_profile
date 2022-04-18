@@ -1,5 +1,9 @@
 #!/bin/bash
 
+CODE_DIR=$HOME/all/code
+if [[ $USER = "root" ]]; then CODE_DIR=$HOME/code; fi
+export CLI_CONFIG_DIR=$CODE_DIR/cli-config
+
 export EDITOR=/usr/bin/vim
 export GPG_TTY=$(tty)
 export GOPATH=$HOME/.local/go

@@ -175,6 +175,12 @@ command! WE execute ":w <bar> silent! :!bash %" <bar> redraw!
 "# Write to file, run command silently with req args, and redraw vim
 command! -nargs=1 WW execute ":w <bar> silent! :!bash % <args>" <bar> redraw!
 
+"# Open TODO.md directly from vim
+command! TODO execute ":e $CLI_CONFIG_DIR/TODO.md"
+
+"# Preview markdowns in Chrome (Mac only atm, Chrome requries an extension as well)
+autocmd BufEnter *.md exe 'noremap <F5> :!open -a "Google Chrome.app" %:p<CR>'
+
 "Edit a remote file
 ":e scp://USER@SERVER/RELATIVE/TO/USER/HOME/PATH
 
@@ -353,7 +359,7 @@ let g:lightline = {
 
 "==== vimwiki =====
 let g:vimwiki_map_prefix = ',e'
-let g:vimwiki_list = [ {'path': '~/all/code/repos/cli-config/wiki'} ]
+let g:vimwiki_list = [ {'path': '~/all/code/cli-config/wiki'} ]
 filetype plugin on
 
 "Forgot why necessary at bottom

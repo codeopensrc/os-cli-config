@@ -22,7 +22,9 @@ function opendir() {
 function kubeall() {
     kubectl get nodes,deployments,service,pods -o wide
 }
-
+function todo() {
+    vim $CLI_CONFIG_DIR/TODO.md
+}
 function tmuxcolors() {
     for i in {0..255}; do
         printf "\x1b[38;5;${i}mcolor%-5i\x1b[0m" $i ;
