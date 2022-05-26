@@ -62,6 +62,16 @@ function EoLToggle()
 endfunction
 
 
+function ShiftwidthToggle()
+  if &shiftwidth == 4
+    set shiftwidth=2
+    echom 'Set shiftwidth to 2'
+  else
+    set shiftwidth=4
+    echom 'Set shiftwidth to 4'
+  endif
+endfunction
+
 ":set list      "View non-printable characters
 ":set nolist    "Hide non-printable characters
 
@@ -110,7 +120,6 @@ nnoremap <Leader>F :NERDTreeFind<CR>
 nnoremap <Leader>g :GitGutter<CR>
 nnoremap <Leader>H :tab h 
 nnoremap <Leader>l :source Session.vim<CR>
-"nnoremap <Leader>n :set noendofline<CR>:set nofixendofline<CR>
 nnoremap <Leader>n mz:execute EoLToggle()<CR>'z
 nnoremap <Leader>p :set paste<CR>
 nnoremap <Leader>pp :set nopaste<CR>
@@ -119,17 +128,19 @@ nnoremap <Leader>Q :resize -5<CR>
 nnoremap <Leader>r :set hls!<CR>
 nnoremap <Leader>R :NERDTreeRefreshRoot<CR>:NERDTreeRefreshRoot<CR>
 nnoremap <Leader>s :NERDTreeClose<CR>:mks!<CR>:NERDTreeToggleVCS %<CR><C-w><C-p>
+nnoremap <Leader>S mz:execute ShiftwidthToggle()<CR>'z
 nnoremap <Leader>t :tabnew
 nnoremap <Leader>w :vertical resize +10<CR>
 nnoremap <Leader>W :vertical resize -10<CR>
 nnoremap <Leader>/ :set formatoptions-=cro<CR>
 nnoremap <Leader>// :set formatoptions+=cro<CR>
 nnoremap ,, :bn<CR>
+nnoremap ,w :b#<CR>
 nnoremap ,p :bp<CR>
 nnoremap ,d :bd<CR>
 nnoremap ,D :bn\|bd #<CR>
-nnoremap ,n :cn<CR>
-nnoremap ,N :cp<CR>
+nnoremap ,c :cn<CR>
+nnoremap ,C :cp<CR>
 nnoremap '' "+
 
 inoremap jj <Esc>
@@ -185,8 +196,6 @@ Plug 'preservim/nerdtree'
 Plug 'Xuyuanp/nerdtree-git-plugin'
 
 "Fuzzy finder
-"==== REQUIRES ag --- sudo apt-get install silversearcher-ag
-"==== SEE $FZF_DEFAULT_COMMAND in this file
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 
@@ -222,6 +231,11 @@ Plug 'dense-analysis/ale'
 
 
 
+"====== Notes ========
+Plug 'vimwiki/vimwiki'
+
+
+
 
 "Plug 'ryanoasis/vim-devicons'
 "===================== Plugins End ===============
@@ -233,14 +247,21 @@ call plug#end()
 
 
 "====== fzf ======
+"fzf.vim default keybind actions - :h fzf_action
 "let $FZF_DEFAULT_OPTS = ""
+
+"===== fzf:Ag ====
+"REQUIRES ag --- sudo apt-get install silversearcher-ag
 let $FZF_DEFAULT_COMMAND = 'ag --hidden --ignore node_modules --ignore .git -l -g ""'
-" Defaults
-"let g:fzf_action = {
-"  \ 'ctrl-t': 'tab split',
-"  \ 'ctrl-x': 'split',
-"  \ 'ctrl-v': 'vsplit',
-"  \}
+
+"https://github.com/junegunn/fzf.vim/issues/92
+command! -bang -nargs=* Ag
+ \ call fzf#vim#ag(
+ \ <q-args>,
+ \ '--hidden',
+ \ fzf#vim#with_preview()
+ \ )
+
 
 
 "====== vim-jsx-pretty =====
@@ -329,6 +350,11 @@ let g:lightline = {
 \ }
 
 
+
+"==== vimwiki =====
+let g:vimwiki_map_prefix = ',e'
+let g:vimwiki_list = [ {'path': '~/all/code/repos/cli-config/wiki'} ]
+filetype plugin on
 
 "Forgot why necessary at bottom
 colorscheme monokai
