@@ -3,8 +3,14 @@
 INITIALIFS=$IFS;
 if [[ $(uname) == "Darwin" ]]; then
     CLI_CONFIG_DIR=$( cd "$(dirname "$0")" ; pwd -P )
+    if [[ -n $(which realpath) ]]; then
+        ABS_SCRIPT_PATH=$(realpath $0)
+    else
+        ABS_SCRIPT_PATH=$CLI_CONFIG_DIR/kc.sh
+    fi
 else
     CLI_CONFIG_DIR=$(dirname $(readlink -f $0))
+    ABS_SCRIPT_PATH=$(readlink -f $0)
 fi
 
 REVIEW_THIS() {
@@ -16,7 +22,7 @@ REVIEW_THIS() {
 if [ "$1" = "load" ]; then
     if [[ $USER == "root" ]]; then
         if [[ ! -f "/usr/local/bin/kc" ]]; then
-            ln -s $(readlink -f $0) /usr/local/bin/kc
+            ln -s $ABS_SCRIPT_PATH /usr/local/bin/kc
             chmod +x /usr/local/bin/kc
         fi
         echo "Loaded";
@@ -27,9 +33,9 @@ if [ "$1" = "load" ]; then
     if [[ ! -f "$HOME/.local/bin/kc" ]]; then
         echo "Not Found in $HOME/.local/bin"
         rm "$HOME/.local/bin/kc" ## Dangling links count as not found - rm in case
-        ln -s $(readlink -f $0) $HOME/.local/bin/kc
+        ln -s $ABS_SCRIPT_PATH $HOME/.local/bin/kc
         chmod +x ~/.local/bin/kc
-        echo "Linked $HOME/.local/bin/kc to $(readlink -f $0)"
+        echo "Linked $HOME/.local/bin/kc to $ABS_SCRIPT_PATH"
     fi
 
     if [[ ! $PATH =~ .*$HOME/\.local/bin.* ]]; then
