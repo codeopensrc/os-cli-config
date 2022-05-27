@@ -26,6 +26,7 @@ if [ "$1" = "load" ]; then
     mkdir -p $HOME/.local/bin
     if [[ ! -f "$HOME/.local/bin/kc" ]]; then
         echo "Not Found in $HOME/.local/bin"
+        rm "$HOME/.local/bin/kc" ## Dangling links count as not found - rm in case
         ln -s $(readlink -f $0) $HOME/.local/bin/kc
         chmod +x ~/.local/bin/kc
         echo "Linked $HOME/.local/bin/kc to $(readlink -f $0)"

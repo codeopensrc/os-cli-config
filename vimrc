@@ -362,8 +362,16 @@ let g:vimwiki_map_prefix = ',e'
 let g:vimwiki_list = [ {'path': '~/all/code/cli-config/wiki'} ]
 filetype plugin on
 
-"Forgot why necessary at bottom
+"Necessary at bottom
 colorscheme monokai
+
+"vimwiki custom colorscheme - must be after colorscheme stanza
+"https://github.com/vimwiki/vimwiki/issues/116
+"https://github.com/vimwiki/vimwiki/blob/dev/syntax/vimwiki.vim
+hi VimwikiLink ctermfg=74
+hi VimwikiCode ctermbg=238
+hi VimwikiPre ctermbg=238
+
 
 "============== Bottom ===============
 

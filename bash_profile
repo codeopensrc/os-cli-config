@@ -8,11 +8,13 @@ export EDITOR=/usr/bin/vim
 export GPG_TTY=$(tty)
 export GOPATH=$HOME/.local/go
 
-ADDED_PATHS=$HOME/.local/bin
-ADDED_PATHS=$ADDED_PATHS:/usr/local/go/bin
-ADDED_PATHS=$ADDED_PATHS:$GOPATH/bin
+PATHS_TO_ADD=( $HOME/.local/bin /usr/local/go/bin $GOPATH/bin )
 
-export PATH=$PATH:$ADDED_PATHS
+for NEW_PATH in "${PATHS_TO_ADD[@]}"; do
+    if [[ ! "$PATH" =~ "$NEW_PATH" ]]; then
+        export PATH=$PATH:$NEW_PATH
+    fi
+done
 
 if [ -f ~/.bash_profile2 ]; then 
     . ~/.bash_profile2
