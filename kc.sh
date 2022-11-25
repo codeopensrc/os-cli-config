@@ -362,6 +362,7 @@ if [ "$1" = "mk" ]; then
     if [[ "$1" = "build" ]]; then docker-compose build; exit; fi
     if [[ "$1" = "prune" ]]; then docker image prune; exit; fi
     if [[ "$1" = "ls" ]]; then docker images; exit; fi
+    exit
 fi
 
 if [ "$1" = "rmi" ]; then
@@ -831,7 +832,8 @@ if [[ $1 = "pg" ]] || [[ $1 = "mongo" ]] || [[ $1 = "redis" ]]; then
         fi
 
         if [[ $DB_TYPE = "mongo" ]]; then
-            docker run -v temp_"$DB_TYPE":/data/db --network mongo0 -d -p 172.17.0.1:27017:27017 \
+            ## Minikube cant connect to the docker bridge ip 172.17.0.1
+            docker run -v temp_"$DB_TYPE":/data/db --network mongo0 -d -p 27017:27017 \
             --name "$DB_TYPE"_server $MONGO_IMAGE
         fi
 

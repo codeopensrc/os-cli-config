@@ -238,7 +238,7 @@ Plug 'dense-analysis/ale'
 
 
 "====== Notes ========
-Plug 'vimwiki/vimwiki'
+"Plug 'vimwiki/vimwiki'
 
 
 
@@ -358,9 +358,9 @@ let g:lightline = {
 
 
 "==== vimwiki =====
-let g:vimwiki_map_prefix = ',e'
-let g:vimwiki_list = [ {'path': '~/all/code/cli-config/wiki'} ]
-filetype plugin on
+"let g:vimwiki_map_prefix = ',e'
+"let g:vimwiki_list = [ {'path': '~/all/code/cli-config/wiki'} ]
+"filetype plugin on
 
 "Necessary at bottom
 colorscheme monokai
@@ -368,9 +368,9 @@ colorscheme monokai
 "vimwiki custom colorscheme - must be after colorscheme stanza
 "https://github.com/vimwiki/vimwiki/issues/116
 "https://github.com/vimwiki/vimwiki/blob/dev/syntax/vimwiki.vim
-hi VimwikiLink ctermfg=74
-hi VimwikiCode ctermbg=238
-hi VimwikiPre ctermbg=238
+"hi VimwikiLink ctermfg=74
+"hi VimwikiCode ctermbg=238
+"hi VimwikiPre ctermbg=238
 
 
 "============== Bottom ===============

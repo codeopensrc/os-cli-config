@@ -7,6 +7,8 @@ export CLI_CONFIG_DIR=$CODE_DIR/cli-config
 export EDITOR=/usr/bin/vim
 export GPG_TTY=$(tty)
 export GOPATH=$HOME/.local/go
+export TO_MERGE_KUBECONFIG=~/.kube/newconfig
+export KUBECONFIG=~/.kube/config:${TO_MERGE_KUBECONFIG}
 
 PATHS_TO_ADD=( $HOME/.local/bin /usr/local/go/bin $GOPATH/bin )
 

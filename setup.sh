@@ -4,7 +4,7 @@ CODE_DIR=$HOME/all/code
 if [[ $USER = "root" ]]; then CODE_DIR=$HOME/code; fi
 CLI_CONFIG_DIR=$CODE_DIR/cli-config
 
-git -C $CODE_DIR clone https://gitlab.codeopensrc.com/os/cli-config.git $CLI_CONFIG_DIR
+git -C $CODE_DIR clone https://github.com/codeopensrc/os-cli-config.git $CLI_CONFIG_DIR
 
 bash $CLI_CONFIG_DIR/kc.sh load
 bash $CLI_CONFIG_DIR/kc.sh link
