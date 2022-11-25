@@ -110,7 +110,8 @@ nnoremap <Leader>a :Ag <C-R><C-W><CR>
 nnoremap <Leader>A :Ag<CR>
 nnoremap <Leader>c :set relativenumber!<CR>
 nnoremap <Leader>d :Git<CR><C-w>L<CR>
-nnoremap <Leader>D :tab Git diff --cached
+nnoremap <Leader>D :tab Git diff origin/master --cached
+nnoremap <Leader>DD :tab Git difftool -y origin/master --cached
 nnoremap <Leader>e :NERDTreeToggleVCS %<CR><C-w><C-p>
 nnoremap <Leader>E :e $MYVIMRC<CR>
 nnoremap <Leader>EE :so $MYVIMRC<CR>
