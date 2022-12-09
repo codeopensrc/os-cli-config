@@ -92,6 +92,10 @@ set laststatus=2
 set textwidth=0
 set wrapmargin=0
 
+"https://stackoverflow.com/questions/6076592/vim-set-formatoptions-being-lost
+"Default is tcq and often do -cro so setting tq as default
+set formatoptions=tq
+
 syntax on
 
 

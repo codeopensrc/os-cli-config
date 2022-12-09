@@ -224,6 +224,8 @@ if [[ "$1" = "gitconfig" ]]; then
 	    $GPGSTRING
 	[commit]
 	    gpgsign = $GPGSIGN
+	[push]
+	    autoSetupRemote = true
 	[credential]
 	    helper = store
 	[alias]
