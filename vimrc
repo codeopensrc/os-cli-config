@@ -263,14 +263,14 @@ call plug#end()
 
 "===== fzf:Ag ====
 "REQUIRES ag --- sudo apt-get install silversearcher-ag
-let $FZF_DEFAULT_COMMAND = 'ag --hidden --ignore node_modules --ignore .git -l -g ""'
+let $FZF_DEFAULT_ARGS = '--hidden --ignore node_modules --ignore .git'
 
 "https://github.com/junegunn/fzf.vim/issues/92
 command! -bang -nargs=* Ag
  \ call fzf#vim#ag(
  \ <q-args>,
- \ '--hidden',
- \ fzf#vim#with_preview()
+ \ $FZF_DEFAULT_ARGS,
+ \ fzf#vim#with_preview({'options': '--delimiter : --nth 4..'})
  \ )
 
 
